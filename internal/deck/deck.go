@@ -14,7 +14,8 @@ type Deck struct {
 // NewStandardDeck creates a standard 52-card deck.
 func NewStandardDeck() Deck {
 
-	var cards []Card
+	// pre allocate the slice
+	cards := make([]Card, 0, 52)
 
 	for _, s := range []Suit{Spades, Hearts, Diamonds, Clubs} {
 		for r := Ace; r <= King; r++ {
@@ -38,8 +39,10 @@ func (d *Deck) Draw() (Card, error) {
 	if len(d.cards) == 0 {
 		return Card{}, errors.New("deck is empty")
 	}
-	card := d.cards[0]
-	d.cards = d.cards[1:]
+
+	lastIndex := len(d.cards) - 1
+	card := d.cards[lastIndex]
+	d.cards = d.cards[:lastIndex]
 	return card, nil
 }
 

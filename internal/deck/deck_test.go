@@ -42,7 +42,7 @@ func TestDraw(t *testing.T) {
 	firstCard, err := deck.Draw()
 	assert.NoError(t, err)
 	assert.Equal(t, 51, len(deck.cards))
-	assert.Equal(t, "Ace of Spades", firstCard.String())
+	assert.Equal(t, "King of Clubs", firstCard.String())
 
 	// draw all the cards
 	for i := 0; i < 51; i++ {
