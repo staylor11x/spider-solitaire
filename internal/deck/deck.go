@@ -22,7 +22,26 @@ func NewStandardDeck() Deck {
 			cards = append(cards, Card{Suit: s, Rank: r})
 		}
 	}
-	return Deck{cards: cards}
+	return Deck{cards}
+}
+
+// NewMultiDeck creates n standard decks, combined into one.
+func NewMultiDeck(n int) Deck {
+
+	if n <= 0 {
+		return Deck{cards: []Card{}}
+	}
+	var cards []Card
+	cards = make([]Card, 0, 52*n)
+
+	for i := 0; i < n; i++ {
+		for _, s := range []Suit{Spades, Hearts, Diamonds, Clubs} {
+			for r := Ace; r <= King; r++ {
+				cards = append(cards, Card{Suit: s, Rank: r})
+			}
+		}
+	}
+	return Deck{cards}
 }
 
 // Shuffle randomises the order of the deck
@@ -48,4 +67,8 @@ func (d *Deck) Draw() (Card, error) {
 
 func (d *Deck) Size() int {
 	return len(d.cards)
+}
+
+func (d *Deck) Cards() []Card {
+	return d.cards
 }
