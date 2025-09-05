@@ -7,7 +7,7 @@ import (
 )
 
 func TestDealInitialGame(t *testing.T) {
-	state, err := DealinitialGame()
+	state, err := DealInitialGame()
 	assert.NoError(t, err)
 
 	totalCards := 0
