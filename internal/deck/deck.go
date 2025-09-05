@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// the deck holds a slice of cards
+// Deck represents a standard deck (or n decks) of cards
 type Deck struct {
 	cards []Card
 }
@@ -22,7 +22,26 @@ func NewStandardDeck() Deck {
 			cards = append(cards, Card{Suit: s, Rank: r})
 		}
 	}
-	return Deck{cards: cards}
+	return Deck{cards}
+}
+
+// NewMultiDeck creates n standard decks, combined into one.
+func NewMultiDeck(n int) Deck {
+
+	if n <= 0 {
+		return Deck{cards: []Card{}}
+	}
+
+	cards := make([]Card, 0, 52*n)
+
+	for range n {
+		for _, s := range []Suit{Spades, Hearts, Diamonds, Clubs} {
+			for r := Ace; r <= King; r++ {
+				cards = append(cards, Card{Suit: s, Rank: r})
+			}
+		}
+	}
+	return Deck{cards}
 }
 
 // Shuffle randomises the order of the deck
@@ -48,4 +67,23 @@ func (d *Deck) Draw() (Card, error) {
 
 func (d *Deck) Size() int {
 	return len(d.cards)
+}
+
+// Cards returns a copy of the cards in the deck
+func (d *Deck) Cards() []Card {
+	c := make([]Card, len(d.cards))
+	copy(c, d.cards)
+	return c
+}
+
+// DrawAll removes and returns all remaining cards from the deck
+func (d *Deck) DrawAll() []Card {
+	if len(d.cards) == 0 {
+		return nil
+	}
+
+	remaining := make([]Card, len(d.cards))
+	copy(remaining, d.cards)
+	d.cards = d.cards[:0] // clear the deck
+	return remaining
 }
