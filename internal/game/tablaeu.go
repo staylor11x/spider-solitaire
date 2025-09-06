@@ -97,3 +97,22 @@ func DealInitialGame() (*GameState, error) {
 		Stock:   stock,
 	}, nil
 }
+
+// DealRow deals one card face-up onto each tabeau pile from the stock
+func (g *GameState) DealRow() error {
+
+	if !g.CanDealRow() {
+		return errors.New("not enough cards in the stock to deal a full row")
+	}
+
+	for i := range TableauPiles {
+		card := g.Stock[len(g.Stock)-1] // take from the end
+		g.Stock = g.Stock[:len(g.Stock)-1]
+		g.Tableau.Piles[i].AddCard(card, true)
+	}
+	return nil
+}
+
+func (g *GameState) CanDealRow() bool {
+	return len(g.Stock) >= TableauPiles
+}
