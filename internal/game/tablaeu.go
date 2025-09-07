@@ -24,30 +24,51 @@ type CardInPile struct {
 }
 
 type Pile struct {
-	cards []CardInPile
+	Cards []CardInPile
 }
 
 // AddCard adds a card to the top of the pile
 func (p *Pile) AddCard(c deck.Card, faceUp bool) {
-	p.cards = append(p.cards, CardInPile{Card: c, FaceUp: faceUp})
+	p.Cards = append(p.Cards, CardInPile{Card: c, FaceUp: faceUp})
 }
 
 // TopCard returns the top card without removing it
 func (p *Pile) TopCard() (CardInPile, error) {
-	if len(p.cards) == 0 {
+	if len(p.Cards) == 0 {
 		return CardInPile{}, errors.New("pile is empty")
 	}
-	return p.cards[len(p.cards)-1], nil
+	return p.Cards[len(p.Cards)-1], nil
 }
 
 // Cards returns a defensive copy of all cards in the pile
-func (p *Pile) Cards() []CardInPile {
-	return slices.Clone(p.cards)
+func (p *Pile) GetCards() []CardInPile {
+	return slices.Clone(p.Cards)
 }
 
 // Size returns the number of cards in the pile
 func (p *Pile) Size() int {
-	return len(p.cards)
+	return len(p.Cards)
+}
+
+// CanAccept checks if a pile can accept the given sequence
+func (p *Pile) CanAccept(seq []CardInPile) bool {
+
+	if len(seq) == 0 {
+		return false
+	}
+
+	// if the pile is empty - any sequence can be placed
+	if len(p.Cards) == 0 {
+		return true
+	}
+
+	top := p.Cards[len(p.Cards)-1] // top card in the destination pile
+	movingTop := seq[0]            // top card in the moving pile
+
+	// must match suit and be exactly one rank lower
+	return top.Card.Suit == movingTop.Card.Suit &&
+		top.Card.Rank == movingTop.Card.Rank+1
+
 }
 
 // Tableau represents the 10 piles in play
@@ -115,4 +136,47 @@ func (g *GameState) DealRow() error {
 
 func (g *GameState) CanDealRow() bool {
 	return len(g.Stock) >= TableauPiles
+}
+
+// MoveSequence moves cards starting at index from one pile to another
+func (g *GameState) MoveSequence(srcIdx, startIdx int, dsIdx int) error {
+
+	if srcIdx < 0 || srcIdx >= TableauPiles || dsIdx < 0 || dsIdx >= TableauPiles {
+		return errors.New("invalid pile index")
+	}
+
+	src := &g.Tableau.Piles[srcIdx]
+	dst := &g.Tableau.Piles[dsIdx]
+
+	if startIdx < 0 || startIdx >= src.Size() {
+		return errors.New("invalid start index")
+	}
+
+	seq := src.GetCards()[startIdx:]
+	if !isValidSequence(seq) {
+		return errors.New("invalid move: sequence not ordered") // this is an error that the user will "interact" with
+	}
+
+	if !dst.CanAccept(seq) {
+		return errors.New("invalid move: destination cannot accept") //same here!
+	}
+
+	// perform move
+	src.Cards = src.Cards[:startIdx]
+	dst.Cards = append(dst.Cards, seq...)
+
+	return nil
+}
+
+func isValidSequence(seq []CardInPile) bool {
+
+	for i := 0; i < len(seq)-1; i++ {
+		if seq[i].Card.Suit != seq[i+1].Card.Suit {
+			return false
+		}
+		if seq[i].Card.Rank != seq[i+1].Card.Rank+1 {
+			return false
+		}
+	}
+	return true
 }

@@ -6,84 +6,84 @@ import (
 	"time"
 )
 
-// Deck represents a standard deck (or n decks) of cards
+// Deck represents a standard deck (or n decks) of Cards
 type Deck struct {
-	cards []Card
+	Cards []Card
 }
 
 // NewStandardDeck creates a standard 52-card deck.
 func NewStandardDeck() Deck {
 
 	// pre allocate the slice
-	cards := make([]Card, 0, 52)
+	Cards := make([]Card, 0, 52)
 
 	for _, s := range []Suit{Spades, Hearts, Diamonds, Clubs} {
 		for r := Ace; r <= King; r++ {
-			cards = append(cards, Card{Suit: s, Rank: r})
+			Cards = append(Cards, Card{Suit: s, Rank: r})
 		}
 	}
-	return Deck{cards}
+	return Deck{Cards}
 }
 
 // NewMultiDeck creates n standard decks, combined into one.
 func NewMultiDeck(n int) Deck {
 
 	if n <= 0 {
-		return Deck{cards: []Card{}}
+		return Deck{Cards: []Card{}}
 	}
 
-	cards := make([]Card, 0, 52*n)
+	Cards := make([]Card, 0, 52*n)
 
 	for range n {
 		for _, s := range []Suit{Spades, Hearts, Diamonds, Clubs} {
 			for r := Ace; r <= King; r++ {
-				cards = append(cards, Card{Suit: s, Rank: r})
+				Cards = append(Cards, Card{Suit: s, Rank: r})
 			}
 		}
 	}
-	return Deck{cards}
+	return Deck{Cards}
 }
 
 // Shuffle randomises the order of the deck
 func (d *Deck) Shuffle() {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	r.Shuffle(len(d.cards), func(i, j int) {
-		d.cards[i], d.cards[j] = d.cards[j], d.cards[i]
+	r.Shuffle(len(d.Cards), func(i, j int) {
+		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
 	})
 }
 
 // Draw removes and returns the top card from the deck
 func (d *Deck) Draw() (Card, error) {
 
-	if len(d.cards) == 0 {
+	if len(d.Cards) == 0 {
 		return Card{}, errors.New("deck is empty")
 	}
 
-	lastIndex := len(d.cards) - 1
-	card := d.cards[lastIndex]
-	d.cards = d.cards[:lastIndex]
+	lastIndex := len(d.Cards) - 1
+	card := d.Cards[lastIndex]
+	d.Cards = d.Cards[:lastIndex]
 	return card, nil
 }
 
 func (d *Deck) Size() int {
-	return len(d.cards)
+	return len(d.Cards)
 }
 
-// Cards returns a copy of the cards in the deck
-func (d *Deck) Cards() []Card {
-	c := make([]Card, len(d.cards))
-	copy(c, d.cards)
+// Cards returns a copy of the Cards in the deck
+func (d *Deck) GetCards() []Card {
+	c := make([]Card, len(d.Cards))
+	copy(c, d.Cards)
 	return c
 }
 
-// DrawAll removes and returns all remaining cards from the deck
+// DrawAll removes and returns all remaining Cards from the deck
 func (d *Deck) DrawAll() []Card {
-	if len(d.cards) == 0 {
+	if len(d.Cards) == 0 {
 		return nil
 	}
 
-	remaining := make([]Card, len(d.cards))
-	copy(remaining, d.cards)
-	d.cards = d.cards[:0] // clear the deck
+	remaining := make([]Card, len(d.Cards))
+	copy(remaining, d.Cards)
+	d.Cards = d.Cards[:0] // clear the deck
 	return remaining
 }
