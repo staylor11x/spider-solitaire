@@ -69,8 +69,8 @@ func (d *Deck) Size() int {
 	return len(d.cards)
 }
 
-// cards returns a copy of the cards in the deck
-func (d *Deck) GetCards() []Card {
+// Cards returns a copy of the cards in the deck
+func (d *Deck) Cards() []Card {
 	c := make([]Card, len(d.cards))
 	copy(c, d.cards)
 	return c

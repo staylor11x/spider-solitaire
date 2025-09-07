@@ -29,7 +29,7 @@ func TestNewMultiDeck(t *testing.T) {
 
 		// count occurences of each card
 		counts := make(map[string]int)
-		for _, c := range d.GetCards() {
+		for _, c := range d.Cards() {
 			counts[c.String()]++
 		}
 
