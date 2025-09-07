@@ -156,3 +156,38 @@ func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
 	assert.Equal(t, 1, g.Tableau.Piles[1].Size())
 }
+
+func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
+	src := game.Pile{[]game.CardInPile{
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, false), // face down
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),   // face up
+	}}
+
+	dst := game.Pile{}
+
+	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.ErrorContains(t, err, "cannot move face-down cards")
+}
+
+func TestMoveSequence_FlipsTopCard(t *testing.T) {
+
+	src := game.Pile{[]game.CardInPile{
+		testtools.MakeCardInPile(deck.Spades, deck.Ace, false),
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	}}
+
+	dst := game.Pile{[]game.CardInPile{
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	}}
+
+	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 1, 1) // move the ten onto the jack
+	assert.NoError(t, err)
+
+	// check that top card has been flipped
+	top, _ := g.Tableau.Piles[0].TopCard()
+	assert.True(t, top.FaceUp)
+}

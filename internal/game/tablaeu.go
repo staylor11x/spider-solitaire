@@ -152,6 +152,10 @@ func (g *GameState) MoveSequence(srcIdx, startIdx int, dsIdx int) error {
 		return errors.New("invalid start index")
 	}
 
+	if !src.Cards[startIdx].FaceUp {
+		return errors.New("cannot move face-down cards")
+	}
+
 	seq := src.GetCards()[startIdx:]
 	if !isValidSequence(seq) {
 		return errors.New("invalid move: sequence not ordered") // this is an error that the user will "interact" with
@@ -164,6 +168,13 @@ func (g *GameState) MoveSequence(srcIdx, startIdx int, dsIdx int) error {
 	// perform move
 	src.Cards = src.Cards[:startIdx]
 	dst.Cards = append(dst.Cards, seq...)
+
+	if len(src.Cards) > 0 {
+		top := &src.Cards[len(src.Cards)-1]
+		if !top.FaceUp {
+			top.FaceUp = true
+		}
+	}
 
 	return nil
 }
