@@ -1,13 +1,17 @@
-package game
+package game_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/staylor11x/spider-solitaire/internal/deck"
+	"github.com/staylor11x/spider-solitaire/internal/game"
+	"github.com/staylor11x/spider-solitaire/internal/testtools"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDealInitialGame(t *testing.T) {
-	state, err := DealInitialGame()
+	state, err := game.DealInitialGame()
 	assert.NoError(t, err)
 
 	totalCards := 0
@@ -29,7 +33,7 @@ func TestDealInitialGame(t *testing.T) {
 }
 
 func TestDealRow(t *testing.T) {
-	state, err := DealInitialGame()
+	state, err := game.DealInitialGame()
 	assert.NoError(t, err)
 
 	originalStock := len(state.Stock)
@@ -49,11 +53,142 @@ func TestDealRow(t *testing.T) {
 }
 
 func TestDealRowFailedWIthInsufficientStock(t *testing.T) {
-	state, _ := DealInitialGame()
+	state, _ := game.DealInitialGame()
 
 	// drain the stock
 	state.Stock = state.Stock[:5]
 
 	err := state.DealRow()
 	assert.Error(t, err, "should fail when fewer than 10 cards remain")
+}
+
+func TestMoveSequence_ValidMove(t *testing.T) {
+
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+		testtools.MakeCardInPile(deck.Spades, deck.Nine, true),
+	)
+
+	dst := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	)
+
+	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 0, g.Tableau.Piles[0].Size(), "source should be empty")
+	assert.Equal(t, 3, g.Tableau.Piles[1].Size(), "destination should have three cards")
+
+	top, _ := g.Tableau.Piles[1].TopCard()
+	assert.Equal(t, deck.Nine, top.Card.Rank, "top card should be 9 of hearts")
+}
+
+func TestMoveSequence_InvalidSequence_NotDescending(t *testing.T) {
+
+	// src pile: 10S, 8S (gap invalid)
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+		testtools.MakeCardInPile(deck.Spades, deck.Eight, true),
+	)
+
+	dst := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	)
+
+	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.ErrorContains(t, err, "invalid move: sequence not ordered")
+}
+
+func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
+
+	// src pile 10S, 9H
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+		testtools.MakeCardInPile(deck.Hearts, deck.Nine, true),
+	)
+
+	dst := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	)
+
+	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.ErrorContains(t, err, "invalid move: sequence not ordered")
+}
+
+func TestMoveSequence_InvalidDestination(t *testing.T) {
+
+	// src pile 10S
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	)
+
+	// dst pile: JH (wrong suit)
+	dst := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Hearts, deck.Jack, true),
+	)
+
+	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.ErrorContains(t, err, "invalid move: destination cannot accept")
+}
+
+func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
+
+	//src pile: 10S
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	)
+
+	//dst pile: empty
+	dst := testtools.NewPile()
+
+	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
+	assert.Equal(t, 1, g.Tableau.Piles[1].Size())
+}
+
+func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, false), // face down
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),   // face up
+	)
+
+	dst := testtools.NewPile()
+
+	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 0, 1)
+	assert.ErrorContains(t, err, fmt.Sprintf("card at position %d is face down", 0))
+}
+
+func TestMoveSequence_FlipsTopCard(t *testing.T) {
+
+	src := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Ace, false),
+		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	)
+
+	dst := testtools.NewPile(
+		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	)
+
+	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 1, 1) // move the ten onto the jack
+	assert.NoError(t, err)
+
+	// check that top card has been flipped
+	top, _ := g.Tableau.Piles[0].TopCard()
+	assert.True(t, top.FaceUp)
 }

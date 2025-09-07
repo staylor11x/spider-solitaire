@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"fmt"
 
 	"slices"
 
@@ -48,6 +49,56 @@ func (p *Pile) Cards() []CardInPile {
 // Size returns the number of cards in the pile
 func (p *Pile) Size() int {
 	return len(p.cards)
+}
+
+// CanAccept checks if a pile can accept the given sequence
+func (p *Pile) CanAccept(seq []CardInPile) bool {
+
+	if len(seq) == 0 {
+		return false
+	}
+
+	// if the pile is empty - any sequence can be placed
+	if len(p.cards) == 0 {
+		return true
+	}
+
+	top := p.cards[len(p.cards)-1] // top card in the destination pile
+	movingTop := seq[0]            // top card in the moving pile
+
+	// must match suit and be exactly one rank lower
+	return top.Card.Suit == movingTop.Card.Suit &&
+		top.Card.Rank == movingTop.Card.Rank+1
+
+}
+
+func (p *Pile) RemoveCardsFrom(startIdx int) ([]CardInPile, error) {
+	if startIdx < 0 || startIdx >= len((p.cards)) {
+		return nil, errors.New("invalid start index")
+	}
+
+	removed := make([]CardInPile, len(p.cards)-startIdx)
+	copy(removed, p.cards[startIdx:])
+
+	p.cards = p.cards[:startIdx]
+	return removed, nil
+}
+
+func (p *Pile) AddCards(cards []CardInPile) {
+	p.cards = append(p.cards, cards...)
+}
+
+func (p *Pile) FlipTopCardIfFaceDown() error {
+	if len(p.cards) == 0 {
+		return nil // no card to flip - this is ok
+	}
+
+	topIdx := len(p.cards) - 1
+	if !p.cards[topIdx].FaceUp {
+		p.cards[topIdx].FaceUp = true
+	}
+
+	return nil
 }
 
 // Tableau represents the 10 piles in play
@@ -115,4 +166,126 @@ func (g *GameState) DealRow() error {
 
 func (g *GameState) CanDealRow() bool {
 	return len(g.Stock) >= TableauPiles
+}
+
+func (g *GameState) MoveSequence(srcIdx, startIdx, dstIdx int) error {
+
+	if err := g.validateMoveIndicies(srcIdx, startIdx, dstIdx); err != nil {
+		return err
+	}
+
+	src := &g.Tableau.Piles[srcIdx]
+	dst := &g.Tableau.Piles[dstIdx]
+
+	sequence, err := g.validateMoveSequence(src, startIdx)
+	if err != nil {
+		return err
+	}
+
+	if !dst.CanAccept(sequence) {
+		return errors.New("invalid move: destination cannot accept")
+	}
+
+	// perform atomic move
+	return g.executeMove(src, dst, startIdx, sequence)
+}
+
+func (g *GameState) validateMoveIndicies(srcIdx, startIdx, dstIdx int) error {
+
+	if srcIdx < 0 || srcIdx >= TableauPiles {
+		return errors.New("invalid source pile index")
+	}
+
+	if dstIdx < 0 || dstIdx >= TableauPiles {
+		return errors.New("invalid destination pile index")
+	}
+
+	if srcIdx == dstIdx {
+		return errors.New("cannot move cards to the same pile")
+	}
+
+	src := &g.Tableau.Piles[srcIdx]
+	if startIdx < 0 || startIdx >= src.Size() {
+		return errors.New("invalid start index")
+	}
+
+	return nil
+}
+
+func (g *GameState) validateMoveSequence(src *Pile, startIdx int) ([]CardInPile, error) {
+
+	allCards := src.Cards() // returns a copy of the cards
+	sequence := allCards[startIdx:]
+
+	if len(sequence) == 0 {
+		return nil, errors.New("no cards to move")
+	}
+
+	// check all cards are face up
+	for i, card := range sequence {
+		if !card.FaceUp {
+			return nil, fmt.Errorf("card at position %d is face down", startIdx+i)
+		}
+	}
+
+	// validate sequence is properly ordered
+	if !isValidSequence(sequence) {
+		return nil, errors.New("invalid move: sequence not ordered")
+	}
+
+	return sequence, nil
+}
+
+func isValidSequence(cards []CardInPile) bool {
+	if len(cards) <= 1 {
+		return true
+	}
+
+	for i := 0; i < len(cards)-1; i++ {
+		current := cards[i].Card
+		next := cards[i+1].Card
+
+		// must be same suit
+		if current.Suit != next.Suit {
+			return false
+		}
+
+		// must be descending rank
+		if current.Rank != next.Rank+1 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (g *GameState) executeMove(src, dst *Pile, startIdx int, sequence []CardInPile) error {
+
+	removedCards, err := src.RemoveCardsFrom(startIdx)
+	if err != nil {
+		return fmt.Errorf("failed to remove cards: %w", err)
+	}
+
+	// Paranoid check: verify removed cards match expected sequence
+	if !sequenceEqual(removedCards, sequence) {
+		// critical error, restore the cards and fail
+		src.AddCards(removedCards)
+		return errors.New("internal error: removed cards don't match expected sequence")
+	}
+
+	// add cards to destination
+	dst.AddCards(removedCards)
+
+	// flip top card of ssource if needed
+	if err := src.FlipTopCardIfFaceDown(); err != nil {
+		return fmt.Errorf("failed to flip source card: %w", err)
+	}
+
+	return nil
+}
+
+func sequenceEqual(a, b []CardInPile) bool {
+	return slices.EqualFunc(a, b, func(x, y CardInPile) bool {
+		return x.FaceUp == y.FaceUp && x.Card == y.Card
+	})
 }
