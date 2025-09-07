@@ -13,7 +13,7 @@ func TestNewStandardDeck(t *testing.T) {
 
 	// ensure no duplicates
 	seen := make(map[string]bool)
-	for _, c := range d.Cards {
+	for _, c := range d.cards {
 		if seen[c.String()] {
 			t.Fatalf("duplicate card found: %s", c)
 		}
@@ -58,8 +58,8 @@ func TestShuffle(t *testing.T) {
 
 	// check that the order is not the same
 	same := true
-	for i := range deck1.Cards {
-		if deck1.Cards[i] != deck2.Cards[i] {
+	for i := range deck1.cards {
+		if deck1.cards[i] != deck2.cards[i] {
 			same = false
 			break
 		}
@@ -71,7 +71,7 @@ func TestDraw(t *testing.T) {
 	deck := NewStandardDeck()
 	firstCard, err := deck.Draw()
 	assert.NoError(t, err)
-	assert.Equal(t, 51, len(deck.Cards))
+	assert.Equal(t, 51, len(deck.cards))
 	assert.Equal(t, "King of Clubs", firstCard.String())
 
 	// draw all the cards
