@@ -1,6 +1,7 @@
 package game_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/staylor11x/spider-solitaire/internal/deck"
@@ -146,7 +147,7 @@ func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 	)
 
 	//dst pile: empty
-	dst := game.Pile{}
+	dst := testtools.NewPile()
 
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
@@ -163,12 +164,12 @@ func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),   // face up
 	)
 
-	dst := game.Pile{}
+	dst := testtools.NewPile()
 
 	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorContains(t, err, "cannot move face-down cards")
+	assert.ErrorContains(t, err, fmt.Sprintf("card at position %d is face down", 0))
 }
 
 func TestMoveSequence_FlipsTopCard(t *testing.T) {

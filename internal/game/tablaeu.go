@@ -183,7 +183,7 @@ func (g *GameState) MoveSequence(srcIdx, startIdx, dstIdx int) error {
 	}
 
 	if !dst.CanAccept(sequence) {
-		return errors.New("destination pile cannot accept sequence")
+		return errors.New("invalid move: destination cannot accept")
 	}
 
 	// perform atomic move
@@ -230,7 +230,7 @@ func (g *GameState) validateMoveSequence(src *Pile, startIdx int) ([]CardInPile,
 
 	// validate sequence is properly ordered
 	if !isValidSequence(sequence) {
-		return nil, errors.New("cards do not form a valid descending sequence")
+		return nil, errors.New("invalid move: sequence not ordered")
 	}
 
 	return sequence, nil
