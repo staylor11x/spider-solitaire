@@ -6,7 +6,9 @@ import (
 )
 
 func NewPile(cards ...game.CardInPile) game.Pile {
-	return game.Pile{Cards: cards}
+	var p game.Pile
+	p.AddCards(cards)
+	return p
 }
 
 func NewSequence(s deck.Suit, ranks []deck.Rank) []game.CardInPile {

@@ -45,8 +45,8 @@ func TestDealRow(t *testing.T) {
 
 	// each pile should be incremented by 1
 	for _, pile := range state.Tableau.Piles {
-		assert.NotEmpty(t, pile.GetCards())
-		top := pile.GetCards()[len(pile.GetCards())-1]
+		assert.NotEmpty(t, pile.Cards())
+		top := pile.Cards()[len(pile.Cards())-1]
 		assert.True(t, top.FaceUp, "newly dealt cards should be face up")
 	}
 }
@@ -63,10 +63,10 @@ func TestDealRowFailedWIthInsufficientStock(t *testing.T) {
 
 func TestMoveSequence_ValidMove(t *testing.T) {
 
-	src := game.Pile{Cards: []game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
 		testtools.MakeCardInPile(deck.Spades, deck.Nine, true),
-	}}
+	)
 
 	dst := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
@@ -87,14 +87,14 @@ func TestMoveSequence_ValidMove(t *testing.T) {
 func TestMoveSequence_InvalidSequence_NotDescending(t *testing.T) {
 
 	// src pile: 10S, 8S (gap invalid)
-	src := game.Pile{Cards: []game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
 		testtools.MakeCardInPile(deck.Spades, deck.Eight, true),
-	}}
+	)
 
-	dst := game.Pile{Cards: []game.CardInPile{
+	dst := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
-	}}
+	)
 
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
@@ -105,14 +105,14 @@ func TestMoveSequence_InvalidSequence_NotDescending(t *testing.T) {
 func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
 
 	// src pile 10S, 9H
-	src := game.Pile{Cards: []game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
 		testtools.MakeCardInPile(deck.Hearts, deck.Nine, true),
-	}}
+	)
 
-	dst := game.Pile{Cards: []game.CardInPile{
+	dst := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
-	}}
+	)
 
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
@@ -123,14 +123,14 @@ func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
 func TestMoveSequence_InvalidDestination(t *testing.T) {
 
 	// src pile 10S
-	src := game.Pile{Cards: []game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
-	}}
+	)
 
 	// dst pile: JH (wrong suit)
-	dst := game.Pile{Cards: []game.CardInPile{
+	dst := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Hearts, deck.Jack, true),
-	}}
+	)
 
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
@@ -141,9 +141,9 @@ func TestMoveSequence_InvalidDestination(t *testing.T) {
 func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 
 	//src pile: 10S
-	src := game.Pile{Cards: []game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
-	}}
+	)
 
 	//dst pile: empty
 	dst := game.Pile{}
@@ -158,10 +158,10 @@ func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 }
 
 func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
-	src := game.Pile{[]game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Jack, false), // face down
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),   // face up
-	}}
+	)
 
 	dst := game.Pile{}
 
@@ -173,14 +173,14 @@ func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
 
 func TestMoveSequence_FlipsTopCard(t *testing.T) {
 
-	src := game.Pile{[]game.CardInPile{
+	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Ace, false),
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
-	}}
+	)
 
-	dst := game.Pile{[]game.CardInPile{
+	dst := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
-	}}
+	)
 
 	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
