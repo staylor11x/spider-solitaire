@@ -45,3 +45,6 @@ Basic implementation of a spider solitaire game, designed for Ubuntu Linux
 - Draw piles and cards.
 
 - Handle simple interactions (click/drag or keyboard simulation).
+
+
+Testing the versioning
