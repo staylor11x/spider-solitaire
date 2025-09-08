@@ -1,0 +1,56 @@
+name: Auto-patch versioning
+on:
+  push:
+    branches:
+      - main
+      
+jobs:
+  auto_patch_version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # This is crucial to fetch all history and tags
+
+      - name: Get latest tag and increment patch version
+        id: get_version
+        run: |
+          # Get the latest tag that matches a semantic version pattern (e.g., v1.2.3)
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" || echo "v0.0.0")
+          
+          echo "Latest tag found: $LATEST_TAG"
+
+          # Remove the 'v' prefix and split the version into parts
+          VERSION_WITHOUT_V="${LATEST_TAG#v}"
+          MAJOR=$(echo $VERSION_WITHOUT_V | cut -d. -f1)
+          MINOR=$(echo $VERSION_WITHOUT_V | cut -d. -f2)
+          PATCH=$(echo $VERSION_WITHOUT_V | cut -d. -f3)
+
+          # Increment the patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          echo "New version will be: $NEW_VERSION"
+          
+          # Set the new version as a step output
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check for existing tag
+        id: check_tag
+        run: |
+          if git rev-parse -q --verify refs/tags/${{ steps.get_version.outputs.NEW_VERSION }} >/dev/null; then
+            echo "Tag ${{ steps.get_version.outputs.NEW_VERSION }} already exists. Skipping tagging."
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag ${{ steps.get_version.outputs.NEW_VERSION }} does not exist. Proceeding to tag."
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create and push new tag
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git tag ${{ steps.get_version.outputs.NEW_VERSION }}
+          git push origin ${{ steps.get_version.outputs.NEW_VERSION }}
