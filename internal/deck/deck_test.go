@@ -8,12 +8,12 @@ import (
 
 func TestNewStandardDeck(t *testing.T) {
 
-	deck := NewStandardDeck()
-	assert.Equal(t, 52, len(deck.cards), "deck should contain 52 cards")
+	d := NewStandardDeck()
+	assert.Equal(t, 52, d.Size(), "deck should contain 52 cards")
 
 	// ensure no duplicates
 	seen := make(map[string]bool)
-	for _, c := range deck.cards {
+	for _, c := range d.cards {
 		if seen[c.String()] {
 			t.Fatalf("duplicate card found: %s", c)
 		}
