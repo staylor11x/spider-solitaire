@@ -62,7 +62,7 @@ func (p *Pile) CanAccept(seq []CardInPile) bool {
 
 func (p *Pile) RemoveCardsFrom(startIdx int) ([]CardInPile, error) {
 	if startIdx < 0 || startIdx >= len((p.cards)) {
-		return nil, errors.New("invalid start index")
+		return nil, ErrInvalidStartIndex
 	}
 
 	removed := make([]CardInPile, len(p.cards)-startIdx)

@@ -1,7 +1,6 @@
 package game_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/staylor11x/spider-solitaire/internal/deck"
@@ -100,7 +99,7 @@ func TestMoveSequence_InvalidSequence_NotDescending(t *testing.T) {
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorContains(t, err, "invalid move: sequence not ordered")
+	assert.ErrorIs(t, err, game.ErrInvalidSequence)
 }
 
 func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
@@ -118,7 +117,7 @@ func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorContains(t, err, "invalid move: sequence not ordered")
+	assert.ErrorIs(t, err, game.ErrInvalidSequence)
 }
 
 func TestMoveSequence_InvalidDestination(t *testing.T) {
@@ -136,7 +135,7 @@ func TestMoveSequence_InvalidDestination(t *testing.T) {
 	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorContains(t, err, "invalid move: destination cannot accept")
+	assert.ErrorIs(t, err, game.ErrDestinationNotAccepting)
 }
 
 func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
@@ -158,7 +157,7 @@ func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 	assert.Equal(t, 1, g.Tableau.Piles[1].Size())
 }
 
-func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
+func TestMoveSequence_FaceDownCardDisallowed(t *testing.T) {
 	src := testtools.NewPile(
 		testtools.MakeCardInPile(deck.Spades, deck.Jack, false), // face down
 		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),   // face up
@@ -169,7 +168,8 @@ func TestMoveSequence_FaceDownCardDissallowed(t *testing.T) {
 	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorContains(t, err, fmt.Sprintf("card at position %d is face down", 0))
+	assert.ErrorIs(t, err, game.CardFaceDownError{})
+	// assert.ErrorContains(t, err, fmt.Sprintf("%s: card at position %d", game.ErrCardFaceDown, 0))
 }
 
 func TestMoveSequence_FlipsTopCard(t *testing.T) {
