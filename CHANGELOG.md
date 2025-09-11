@@ -54,5 +54,9 @@ Unit tests:
 ### v0.1.5 - Implemented Auto Versioning
 
 Implemented auto versioning into repo
-- Version will increase every patch version on merge/push to main branch
-### 
+- Version will increase every patch version on merge/push to main branch.
+
+### v0.1.6 - Improved Errors handling
+
+Implemented improved error handling in the game package
+- Refactored most of the errors in the game package to use sentinel errors or typed errors.
