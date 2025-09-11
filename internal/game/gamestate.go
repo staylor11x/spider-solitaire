@@ -1,9 +1,6 @@
 package game
 
 import (
-	"errors"
-	"fmt"
-
 	"slices"
 
 	"github.com/staylor11x/spider-solitaire/internal/deck"
@@ -15,7 +12,7 @@ const (
 	SpiderDeckCount  = 2
 	TotalSpiderCards = 104
 	FirstPileCards   = 6 // first 4 piles get 6 cards
-	RestPileCards    = 5 // remanining 6 piles get 5 cards
+	RestPileCards    = 5 // remaining 6 piles get 5 cards
 	FirstPileCount   = 4 // number of piles that get 6 cards
 )
 
@@ -32,7 +29,7 @@ func DealInitialGame() (*GameState, error) {
 	d.Shuffle()
 
 	if d.Size() != TotalSpiderCards {
-		return nil, errors.New("not enough cards for spider")
+		return nil, ErrNotEnoughCards
 	}
 
 	// deal tableau
@@ -62,11 +59,11 @@ func DealInitialGame() (*GameState, error) {
 	}, nil
 }
 
-// DealRow deals one card face-up onto each tabeau pile from the stock
+// DealRow deals one card face-up onto each tableau pile from the stock
 func (g *GameState) DealRow() error {
 
 	if !g.CanDealRow() {
-		return errors.New("not enough cards in the stock to deal a full row")
+		return ErrInsufficientStock
 	}
 
 	for i := range TableauPiles {
@@ -83,7 +80,7 @@ func (g *GameState) CanDealRow() bool {
 
 func (g *GameState) MoveSequence(srcIdx, startIdx, dstIdx int) error {
 
-	if err := g.validateMoveIndicies(srcIdx, startIdx, dstIdx); err != nil {
+	if err := g.validateMoveIndices(srcIdx, startIdx, dstIdx); err != nil {
 		return err
 	}
 
@@ -96,30 +93,30 @@ func (g *GameState) MoveSequence(srcIdx, startIdx, dstIdx int) error {
 	}
 
 	if !dst.CanAccept(sequence) {
-		return errors.New("invalid move: destination cannot accept")
+		return ErrDestinationNotAccepting
 	}
 
 	// perform atomic move
 	return g.executeMove(src, dst, startIdx, sequence)
 }
 
-func (g *GameState) validateMoveIndicies(srcIdx, startIdx, dstIdx int) error {
+func (g *GameState) validateMoveIndices(srcIdx, startIdx, dstIdx int) error {
 
 	if srcIdx < 0 || srcIdx >= TableauPiles {
-		return errors.New("invalid source pile index")
+		return ErrInvalidSourceIndex
 	}
 
 	if dstIdx < 0 || dstIdx >= TableauPiles {
-		return errors.New("invalid destination pile index")
+		return ErrInvalidDestinationIndex
 	}
 
 	if srcIdx == dstIdx {
-		return errors.New("cannot move cards to the same pile")
+		return ErrSamePileMove
 	}
 
 	src := &g.Tableau.Piles[srcIdx]
 	if startIdx < 0 || startIdx >= src.Size() {
-		return errors.New("invalid start index")
+		return ErrInvalidStartIndex
 	}
 
 	return nil
@@ -131,19 +128,19 @@ func (g *GameState) validateMoveSequence(src *Pile, startIdx int) ([]CardInPile,
 	sequence := allCards[startIdx:]
 
 	if len(sequence) == 0 {
-		return nil, errors.New("no cards to move")
+		return nil, ErrNoCardsToMove
 	}
 
 	// check all cards are face up
 	for i, card := range sequence {
 		if !card.FaceUp {
-			return nil, fmt.Errorf("card at position %d is face down", startIdx+i)
+			return nil, CardFaceDownError{Index: startIdx + i}
 		}
 	}
 
 	// validate sequence is properly ordered
 	if !isValidSequence(sequence) {
-		return nil, errors.New("invalid move: sequence not ordered")
+		return nil, ErrInvalidSequence
 	}
 
 	return sequence, nil
@@ -176,22 +173,22 @@ func (g *GameState) executeMove(src, dst *Pile, startIdx int, sequence []CardInP
 
 	removedCards, err := src.RemoveCardsFrom(startIdx)
 	if err != nil {
-		return fmt.Errorf("failed to remove cards: %w", err)
+		return ErrRemoveCardsWithContext(err)
 	}
 
 	// Paranoid check: verify removed cards match expected sequence
 	if !sequenceEqual(removedCards, sequence) {
 		// critical error, restore the cards and fail
 		src.AddCards(removedCards)
-		return errors.New("internal error: removed cards don't match expected sequence")
+		return ErrSequenceMismatch
 	}
 
 	// add cards to destination
 	dst.AddCards(removedCards)
 
-	// flip top card of ssource if needed
+	// flip top card of source if needed
 	if err := src.FlipTopCardIfFaceDown(); err != nil {
-		return fmt.Errorf("failed to flip source card: %w", err)
+		return ErrFlipWithContext(err)
 	}
 
 	return nil
