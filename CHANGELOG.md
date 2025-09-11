@@ -1,6 +1,6 @@
 # CHANGELOG
 
-### v0.1.0 – Initial Deck Support
+### v0.0.1 – Initial Deck Support
 
 Added Card, Suit, and Rank types with String() methods.
 
@@ -12,7 +12,7 @@ Implemented Deck with:
 - Draw() and DrawAll() → retrieve cards.
 - Size() → count remaining cards.
 
-### v0.2.0 – Tableau & GameState Initialization
+### v0.0.2 – Tableau & GameState Initialization
 
 Added Pile struct:
 
@@ -24,7 +24,7 @@ Added Pile struct:
 
 Unit tests: validated initial setup, face-up rules.
 
-### v0.3.0 – Stock & Row Dealing
+### v0.0.3 – Stock & Row Dealing
 
 Added DealRow() → deals one face-up card to each tableau pile from stock.
 
@@ -32,7 +32,7 @@ Added CanDealRow() → check if stock has at least 10 cards.
 
 Unit tests: row dealing reduces stock, ensures face-up cards, fails gracefully if not enough stock.
 
-### v0.4.0 – Moving Sequences Between Piles
+### v0.0.4 – Moving Sequences Between Piles
 
 Added MoveSequence(srcIdx, startIdx, dstIdx) on GameState.
 
@@ -51,5 +51,8 @@ Unit tests:
 - Invalid moves fail (wrong suit, not descending, destination invalid, face-down card).
 - Verified top card flips after move if previously face-down.
 
+### v0.1.5 - Implemented Auto Versioning
 
+Implemented auto versioning into repo
+- Version will increase every patch version on merge/push to main branch
 ### 
