@@ -169,7 +169,6 @@ func TestMoveSequence_FaceDownCardDisallowed(t *testing.T) {
 
 	err := g.MoveSequence(0, 0, 1)
 	assert.ErrorIs(t, err, game.CardFaceDownError{})
-	// assert.ErrorContains(t, err, fmt.Sprintf("%s: card at position %d", game.ErrCardFaceDown, 0))
 }
 
 func TestMoveSequence_FlipsTopCard(t *testing.T) {
