@@ -191,3 +191,29 @@ func TestMoveSequence_FlipsTopCard(t *testing.T) {
 	top, _ := g.Tableau.Piles[0].TopCard()
 	assert.True(t, top.FaceUp)
 }
+
+func TestMoveSequence_CompletedRun(t *testing.T) {
+
+	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{}}}
+
+	// make a pile all cards apart from an ace
+	dst := testtools.NewSequenceWithIgnoreRank(deck.Spades, deck.Ace)
+	g.Tableau.Piles[0].AddCards(dst)
+
+	// add the ace to another pile
+	g.Tableau.Piles[1].AddCard(deck.Card{deck.Spades, deck.Ace}, true)
+
+	// move the ace to the almost complete pile
+	err := g.MoveSequence(1, 0, 0)
+	assert.NoError(t, err, "unexpected error moving cards: %v", err)
+
+	// pile 1 should be empty
+	assert.Equal(t, 0, g.Tableau.Piles[1].Size(), "pile 1 is not empty")
+
+	// run should be recorded as completed
+	assert.Equal(t, 1, len(g.Completed))
+
+	// there should be 13 cards in the completed run
+	assert.Equal(t, 13, len(g.Completed[0]))
+
+}

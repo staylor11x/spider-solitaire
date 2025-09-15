@@ -11,15 +11,17 @@ const (
 	TableauPiles     = 10
 	SpiderDeckCount  = 2
 	TotalSpiderCards = 104
-	FirstPileCards   = 6 // first 4 piles get 6 cards
-	RestPileCards    = 5 // remaining 6 piles get 5 cards
-	FirstPileCount   = 4 // number of piles that get 6 cards
+	FirstPileCards   = 6  // first 4 piles get 6 cards
+	RestPileCards    = 5  // remaining 6 piles get 5 cards
+	FirstPileCount   = 4  // number of piles that get 6 cards
+	RunLength        = 13 // King to Ace
 )
 
 // GameState represents the complete state of a spider game
 type GameState struct {
-	Tableau Tableau
-	Stock   []deck.Card
+	Tableau   Tableau
+	Stock     []deck.Card
+	Completed [][]CardInPile
 }
 
 // DealInitialGame creates a new spider layout using two decks
@@ -62,7 +64,7 @@ func DealInitialGame() (*GameState, error) {
 // DealRow deals one card face-up onto each tableau pile from the stock
 func (g *GameState) DealRow() error {
 
-	if !g.CanDealRow() {
+	if !g.canDealRow() {
 		return ErrInsufficientStock
 	}
 
@@ -74,7 +76,7 @@ func (g *GameState) DealRow() error {
 	return nil
 }
 
-func (g *GameState) CanDealRow() bool {
+func (g *GameState) canDealRow() bool {
 	return len(g.Stock) >= TableauPiles
 }
 
@@ -191,6 +193,9 @@ func (g *GameState) executeMove(src, dst *Pile, startIdx int, sequence []CardInP
 		return ErrFlipWithContext(err)
 	}
 
+	// check for completed runs
+	g.checkCompletedRuns()
+
 	return nil
 }
 
@@ -198,4 +203,59 @@ func sequenceEqual(a, b []CardInPile) bool {
 	return slices.EqualFunc(a, b, func(x, y CardInPile) bool {
 		return x.FaceUp == y.FaceUp && x.Card == y.Card
 	})
+}
+
+// checkCompletedRuns scans each pile for a complete run and removed it if found, storing it in g.Completed
+func (g *GameState) checkCompletedRuns() {
+
+	for i := range g.Tableau.Piles {
+		pile := &g.Tableau.Piles[i]
+		if pile.Size() < RunLength {
+			continue
+		}
+
+		// look at the last 13 cards
+		last := pile.Cards()[pile.Size()-RunLength:]
+		if isValidRun(last) {
+			removed, _ := pile.RemoveCardsFrom(pile.Size() - RunLength)
+
+			// add to completed
+			g.Completed = append(g.Completed, removed)
+
+			// flip to card if needed - why is there here?
+			_ = pile.FlipTopCardIfFaceDown()
+		}
+	}
+}
+
+// isValidRun checks for a perfect King->Ace descending run in one suit
+func isValidRun(cards []CardInPile) bool {
+
+	if len(cards) != RunLength {
+		return false
+	}
+
+	if !cards[0].FaceUp {
+		return false
+	}
+
+	// must start with a king
+	if cards[0].Card.Rank != deck.King {
+		return false
+	}
+
+	// check each step -- there is probs some hyper efficient way to do this
+	for i := 0; i < len(cards)-1; i++ {
+		if !cards[i].FaceUp || !cards[i+1].FaceUp {
+			return false
+		}
+		if cards[i].Card.Suit != cards[i+1].Card.Suit {
+			return false
+		}
+		if cards[i].Card.Rank != cards[i+1].Card.Rank+1 {
+			return false
+		}
+	}
+	// must end on an ace
+	return cards[len(cards)-1].Card.Rank == deck.Ace
 }
