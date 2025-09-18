@@ -73,6 +73,7 @@ func (g *GameState) DealRow() error {
 		g.Stock = g.Stock[:len(g.Stock)-1]
 		g.Tableau.Piles[i].AddCard(card, true)
 	}
+	g.checkCompletedRuns()
 	return nil
 }
 

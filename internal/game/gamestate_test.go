@@ -201,7 +201,7 @@ func TestMoveSequence_CompletedRun(t *testing.T) {
 	g.Tableau.Piles[0].AddCards(dst)
 
 	// add the ace to another pile
-	g.Tableau.Piles[1].AddCard(deck.Card{deck.Spades, deck.Ace}, true)
+	g.Tableau.Piles[1].AddCard(deck.Card{Suit: deck.Spades, Rank: deck.Ace}, true)
 
 	// move the ace to the almost complete pile
 	err := g.MoveSequence(1, 0, 0)
