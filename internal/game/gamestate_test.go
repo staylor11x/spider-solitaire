@@ -1,16 +1,14 @@
-package game_test
+package game
 
 import (
 	"testing"
 
 	"github.com/staylor11x/spider-solitaire/internal/deck"
-	"github.com/staylor11x/spider-solitaire/internal/game"
-	"github.com/staylor11x/spider-solitaire/internal/testtools"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDealInitialGame(t *testing.T) {
-	state, err := game.DealInitialGame()
+	state, err := DealInitialGame()
 	assert.NoError(t, err)
 
 	totalCards := 0
@@ -32,7 +30,7 @@ func TestDealInitialGame(t *testing.T) {
 }
 
 func TestDealRow(t *testing.T) {
-	state, err := game.DealInitialGame()
+	state, err := DealInitialGame()
 	assert.NoError(t, err)
 
 	originalStock := len(state.Stock)
@@ -52,7 +50,7 @@ func TestDealRow(t *testing.T) {
 }
 
 func TestDealRowFailedWIthInsufficientStock(t *testing.T) {
-	state, _ := game.DealInitialGame()
+	state, _ := DealInitialGame()
 
 	// drain the stock
 	state.Stock = state.Stock[:5]
@@ -61,18 +59,34 @@ func TestDealRowFailedWIthInsufficientStock(t *testing.T) {
 	assert.Error(t, err, "should fail when fewer than 10 cards remain")
 }
 
+func newPile(cards ...CardInPile) Pile {
+	var p Pile
+	p.AddCards(cards)
+	return p
+}
+
+func makeCardInPile(s deck.Suit, r deck.Rank, faceUp bool) CardInPile {
+	return struct {
+		Card   deck.Card
+		FaceUp bool
+	}{
+		Card:   deck.Card{Suit: s, Rank: r},
+		FaceUp: faceUp,
+	}
+}
+
 func TestMoveSequence_ValidMove(t *testing.T) {
 
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
-		testtools.MakeCardInPile(deck.Spades, deck.Nine, true),
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ten, true),
+		makeCardInPile(deck.Spades, deck.Nine, true),
 	)
 
-	dst := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	dst := newPile(
+		makeCardInPile(deck.Spades, deck.Jack, true),
 	)
 
-	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
 	assert.NoError(t, err)
@@ -87,68 +101,68 @@ func TestMoveSequence_ValidMove(t *testing.T) {
 func TestMoveSequence_InvalidSequence_NotDescending(t *testing.T) {
 
 	// src pile: 10S, 8S (gap invalid)
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
-		testtools.MakeCardInPile(deck.Spades, deck.Eight, true),
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ten, true),
+		makeCardInPile(deck.Spades, deck.Eight, true),
 	)
 
-	dst := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	dst := newPile(
+		makeCardInPile(deck.Spades, deck.Jack, true),
 	)
 
-	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, game.ErrInvalidSequence)
+	assert.ErrorIs(t, err, ErrInvalidSequence)
 }
 
 func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
 
 	// src pile 10S, 9H
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
-		testtools.MakeCardInPile(deck.Hearts, deck.Nine, true),
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ten, true),
+		makeCardInPile(deck.Hearts, deck.Nine, true),
 	)
 
-	dst := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	dst := newPile(
+		makeCardInPile(deck.Spades, deck.Jack, true),
 	)
 
-	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, game.ErrInvalidSequence)
+	assert.ErrorIs(t, err, ErrInvalidSequence)
 }
 
 func TestMoveSequence_InvalidDestination(t *testing.T) {
 
 	// src pile 10S
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ten, true),
 	)
 
 	// dst pile: JH (wrong suit)
-	dst := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Hearts, deck.Jack, true),
+	dst := newPile(
+		makeCardInPile(deck.Hearts, deck.Jack, true),
 	)
 
-	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, game.ErrDestinationNotAccepting)
+	assert.ErrorIs(t, err, ErrDestinationNotAccepting)
 }
 
 func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 
 	//src pile: 10S
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ten, true),
 	)
 
 	//dst pile: empty
-	dst := testtools.NewPile()
+	dst := newPile()
 
-	g := game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
 	assert.NoError(t, err)
@@ -158,31 +172,31 @@ func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
 }
 
 func TestMoveSequence_FaceDownCardDisallowed(t *testing.T) {
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Jack, false), // face down
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),   // face up
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Jack, false), // face down
+		makeCardInPile(deck.Spades, deck.Ten, true),   // face up
 	)
 
-	dst := testtools.NewPile()
+	dst := newPile()
 
-	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, game.CardFaceDownError{})
+	assert.ErrorIs(t, err, CardFaceDownError{})
 }
 
 func TestMoveSequence_FlipsTopCard(t *testing.T) {
 
-	src := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Ace, false),
-		testtools.MakeCardInPile(deck.Spades, deck.Ten, true),
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ace, false),
+		makeCardInPile(deck.Spades, deck.Ten, true),
 	)
 
-	dst := testtools.NewPile(
-		testtools.MakeCardInPile(deck.Spades, deck.Jack, true),
+	dst := newPile(
+		makeCardInPile(deck.Spades, deck.Jack, true),
 	)
 
-	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{src, dst}}}
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
 
 	err := g.MoveSequence(0, 1, 1) // move the ten onto the jack
 	assert.NoError(t, err)
@@ -192,16 +206,31 @@ func TestMoveSequence_FlipsTopCard(t *testing.T) {
 	assert.True(t, top.FaceUp)
 }
 
+// NewSequenceWithIgnoreRank is a method that can be used to build a sequence with a card missing
+func newSequenceWithIgnoreRank(s deck.Suit, rankToIgnore deck.Rank) []CardInPile {
+	seq := make([]CardInPile, 0, 13)
+	for r := deck.King; r >= deck.Ace; r-- {
+		if r == rankToIgnore {
+			continue
+		}
+		seq = append(seq, CardInPile{
+			Card:   deck.Card{Suit: s, Rank: r},
+			FaceUp: true,
+		})
+	}
+	return seq
+}
+
 func TestMoveSequence_CompletedRun(t *testing.T) {
 
-	g := &game.GameState{Tableau: game.Tableau{Piles: [10]game.Pile{}}}
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
 
 	// make a pile all cards apart from an ace
-	dst := testtools.NewSequenceWithIgnoreRank(deck.Spades, deck.Ace)
+	dst := newSequenceWithIgnoreRank(deck.Spades, deck.Ace)
 	g.Tableau.Piles[0].AddCards(dst)
 
 	// add the ace to another pile
-	g.Tableau.Piles[1].AddCard(deck.Card{deck.Spades, deck.Ace}, true)
+	g.Tableau.Piles[1].AddCard(deck.Card{Suit: deck.Spades, Rank: deck.Ace}, true)
 
 	// move the ace to the almost complete pile
 	err := g.MoveSequence(1, 0, 0)
