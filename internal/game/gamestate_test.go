@@ -7,57 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDealInitialGame(t *testing.T) {
-	state, err := DealInitialGame()
-	assert.NoError(t, err)
-
-	totalCards := 0
-	for i, pile := range state.Tableau.Piles {
-		if i < 4 {
-			assert.Equal(t, 6, pile.Size())
-		} else {
-			assert.Equal(t, 5, pile.Size())
-		}
-		totalCards += pile.Size()
-
-		top, _ := pile.TopCard()
-		assert.True(t, top.FaceUp)
-	}
-	assert.Equal(t, 54, totalCards)
-
-	// stock should have 50 cards left
-	assert.Equal(t, 50, len(state.Stock))
-}
-
-func TestDealRow(t *testing.T) {
-	state, err := DealInitialGame()
-	assert.NoError(t, err)
-
-	originalStock := len(state.Stock)
-
-	err = state.DealRow()
-	assert.NoError(t, err)
-
-	// stock should be reduced by 10
-	assert.Equal(t, originalStock-10, len(state.Stock))
-
-	// each pile should be incremented by 1
-	for _, pile := range state.Tableau.Piles {
-		assert.NotEmpty(t, pile.Cards())
-		top := pile.Cards()[len(pile.Cards())-1]
-		assert.True(t, top.FaceUp, "newly dealt cards should be face up")
-	}
-}
-
-func TestDealRowFailedWIthInsufficientStock(t *testing.T) {
-	state, _ := DealInitialGame()
-
-	// drain the stock
-	state.Stock = state.Stock[:5]
-
-	err := state.DealRow()
-	assert.Error(t, err, "should fail when fewer than 10 cards remain")
-}
+// Helper Functions
 
 func newPile(cards ...CardInPile) Pile {
 	var p Pile
@@ -75,138 +25,7 @@ func makeCardInPile(s deck.Suit, r deck.Rank, faceUp bool) CardInPile {
 	}
 }
 
-func TestMoveSequence_ValidMove(t *testing.T) {
-
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Ten, true),
-		makeCardInPile(deck.Spades, deck.Nine, true),
-	)
-
-	dst := newPile(
-		makeCardInPile(deck.Spades, deck.Jack, true),
-	)
-
-	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 0, 1)
-	assert.NoError(t, err)
-
-	assert.Equal(t, 0, g.Tableau.Piles[0].Size(), "source should be empty")
-	assert.Equal(t, 3, g.Tableau.Piles[1].Size(), "destination should have three cards")
-
-	top, _ := g.Tableau.Piles[1].TopCard()
-	assert.Equal(t, deck.Nine, top.Card.Rank, "top card should be 9 of hearts")
-}
-
-func TestMoveSequence_InvalidSequence_NotDescending(t *testing.T) {
-
-	// src pile: 10S, 8S (gap invalid)
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Ten, true),
-		makeCardInPile(deck.Spades, deck.Eight, true),
-	)
-
-	dst := newPile(
-		makeCardInPile(deck.Spades, deck.Jack, true),
-	)
-
-	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, ErrInvalidSequence)
-}
-
-func TestMoveSequence_InvalidSequence_WrongSuit(t *testing.T) {
-
-	// src pile 10S, 9H
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Ten, true),
-		makeCardInPile(deck.Hearts, deck.Nine, true),
-	)
-
-	dst := newPile(
-		makeCardInPile(deck.Spades, deck.Jack, true),
-	)
-
-	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, ErrInvalidSequence)
-}
-
-func TestMoveSequence_InvalidDestination(t *testing.T) {
-
-	// src pile 10S
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Ten, true),
-	)
-
-	// dst pile: JH (wrong suit)
-	dst := newPile(
-		makeCardInPile(deck.Hearts, deck.Jack, true),
-	)
-
-	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, ErrDestinationNotAccepting)
-}
-
-func TestMoveSequence_MoveIntoEmptyPile(t *testing.T) {
-
-	//src pile: 10S
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Ten, true),
-	)
-
-	//dst pile: empty
-	dst := newPile()
-
-	g := GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 0, 1)
-	assert.NoError(t, err)
-
-	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
-	assert.Equal(t, 1, g.Tableau.Piles[1].Size())
-}
-
-func TestMoveSequence_FaceDownCardDisallowed(t *testing.T) {
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Jack, false), // face down
-		makeCardInPile(deck.Spades, deck.Ten, true),   // face up
-	)
-
-	dst := newPile()
-
-	g := &GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 0, 1)
-	assert.ErrorIs(t, err, CardFaceDownError{})
-}
-
-func TestMoveSequence_FlipsTopCard(t *testing.T) {
-
-	src := newPile(
-		makeCardInPile(deck.Spades, deck.Ace, false),
-		makeCardInPile(deck.Spades, deck.Ten, true),
-	)
-
-	dst := newPile(
-		makeCardInPile(deck.Spades, deck.Jack, true),
-	)
-
-	g := &GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
-
-	err := g.MoveSequence(0, 1, 1) // move the ten onto the jack
-	assert.NoError(t, err)
-
-	// check that top card has been flipped
-	top, _ := g.Tableau.Piles[0].TopCard()
-	assert.True(t, top.FaceUp)
-}
-
-// NewSequenceWithIgnoreRank is a method that can be used to build a sequence with a card missing
+// newSequenceWithIgnoreRank is a method that can be used to build a sequence with a card missing
 func newSequenceWithIgnoreRank(s deck.Suit, rankToIgnore deck.Rank) []CardInPile {
 	seq := make([]CardInPile, 0, 13)
 	for r := deck.King; r >= deck.Ace; r-- {
@@ -221,28 +40,251 @@ func newSequenceWithIgnoreRank(s deck.Suit, rankToIgnore deck.Rank) []CardInPile
 	return seq
 }
 
-func TestMoveSequence_CompletedRun(t *testing.T) {
+func TestIsValidSequence(t *testing.T) {
+	tests := []struct {
+		name   string
+		cards  []CardInPile
+		expect bool
+	}{
+		{
+			"Valid descending run",
+			[]CardInPile{
+				makeCardInPile(deck.Spades, deck.King, true),
+				makeCardInPile(deck.Spades, deck.Queen, true),
+				makeCardInPile(deck.Spades, deck.Jack, true),
+			},
+			true,
+		},
+		{
+			"Wrong suit",
+			[]CardInPile{
+				makeCardInPile(deck.Spades, deck.King, true),
+				makeCardInPile(deck.Diamonds, deck.Queen, true),
+			},
+			false,
+		},
+		{
+			"Not descending",
+			[]CardInPile{
+				makeCardInPile(deck.Spades, deck.King, true),
+				makeCardInPile(deck.Spades, deck.Ace, true),
+			},
+			false,
+		},
+		{
+			"Edge case: Ace King",
+			[]CardInPile{
+				makeCardInPile(deck.Clubs, deck.Ace, true),
+				makeCardInPile(deck.Clubs, deck.King, true),
+			},
+			false,
+		},
+		{
+			"Edge case: skip card",
+			[]CardInPile{
+				makeCardInPile(deck.Clubs, deck.Seven, true),
+				makeCardInPile(deck.Clubs, deck.Five, true),
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expect, isValidSequence(tt.cards))
+		})
+	}
+}
 
+func TestIsValidRun(t *testing.T) {
+	validRun := make([]CardInPile, 0, 13)
+	for r := deck.King; r >= deck.Ace; r-- {
+		validRun = append(validRun, makeCardInPile(deck.Spades, r, true))
+	}
+	assert.True(t, isValidRun(validRun), "Expected valid King > Ace run")
+
+	invalid := append(validRun[:5], makeCardInPile(deck.Hearts, deck.Nine, true))
+	assert.False(t, isValidRun(invalid), "Mixed suits should be invalid")
+}
+
+// Integration type tests (Public API behavior)
+
+func TestDealInitialGame(t *testing.T) {
+	state, err := DealInitialGame()
+	assert.NoError(t, err)
+
+	totalCards := 0
+	for i, pile := range state.Tableau.Piles {
+		if i < 4 {
+			assert.Equal(t, 6, pile.Size())
+		} else {
+			assert.Equal(t, 5, pile.Size())
+		}
+		totalCards += pile.Size()
+
+		top, _ := pile.TopCard()
+		assert.True(t, top.FaceUp)
+	}
+	assert.Equal(t, 54, totalCards)
+	assert.Equal(t, 50, len(state.Stock))
+}
+
+func TestDealRow(t *testing.T) {
+	state, err := DealInitialGame()
+	assert.NoError(t, err)
+
+	originalStock := len(state.Stock)
+
+	err = state.DealRow()
+	assert.NoError(t, err)
+
+	assert.Equal(t, originalStock-10, len(state.Stock))
+
+	for _, pile := range state.Tableau.Piles {
+		top := pile.Cards()[len(pile.Cards())-1]
+		assert.True(t, top.FaceUp)
+	}
+}
+
+func TestDealRow_FailsWhenStockIsInsufficient(t *testing.T) {
+	state, _ := DealInitialGame()
+	state.Stock = state.Stock[:5]
+
+	err := state.DealRow()
+	assert.ErrorIs(t, err, ErrInsufficientStock)
+}
+
+func TestMoveSequence(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        Pile
+		dst        Pile
+		startIdx   int
+		expectErr  error
+		validateFn func(t *testing.T, g *GameState)
+	}{
+		{
+			name: "Valid move descending same suit",
+			src: newPile(
+				makeCardInPile(deck.Spades, deck.Ten, true),
+				makeCardInPile(deck.Spades, deck.Nine, true),
+			),
+			dst:       newPile(makeCardInPile(deck.Spades, deck.Jack, true)),
+			expectErr: nil,
+			validateFn: func(t *testing.T, g *GameState) {
+				assert.Equal(t, 0, g.Tableau.Piles[0].Size())
+				assert.Equal(t, 3, g.Tableau.Piles[1].Size())
+			},
+		},
+		{
+			name: "Invalid sequence not descending",
+			src: newPile(
+				makeCardInPile(deck.Spades, deck.Ten, true),
+				makeCardInPile(deck.Spades, deck.Eight, true),
+			),
+			dst:       newPile(makeCardInPile(deck.Spades, deck.Jack, true)),
+			expectErr: ErrInvalidSequence,
+		},
+		{
+			name: "Invalid sequence wrong suit",
+			src: newPile(
+				makeCardInPile(deck.Spades, deck.Ten, true),
+				makeCardInPile(deck.Hearts, deck.Nine, true),
+			),
+			dst:       newPile(makeCardInPile(deck.Spades, deck.Jack, true)),
+			expectErr: ErrInvalidSequence,
+		},
+		{
+			name:      "Invalid destination wrong suit",
+			src:       newPile(makeCardInPile(deck.Spades, deck.Ten, true)),
+			dst:       newPile(makeCardInPile(deck.Hearts, deck.Jack, true)),
+			expectErr: ErrDestinationNotAccepting,
+		},
+		{
+			name:      "Move into empty pile allowed",
+			src:       newPile(makeCardInPile(deck.Spades, deck.Ten, true)),
+			dst:       newPile(),
+			expectErr: nil,
+			validateFn: func(t *testing.T, g *GameState) {
+				assert.Equal(t, 1, g.Tableau.Piles[1].Size())
+			},
+		},
+		{
+			name: "Face down card disallowed",
+			src: newPile(
+				makeCardInPile(deck.Spades, deck.Jack, false),
+				makeCardInPile(deck.Spades, deck.Ten, true),
+			),
+			dst:       newPile(),
+			expectErr: CardFaceDownError{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &GameState{Tableau: Tableau{Piles: [10]Pile{tt.src, tt.dst}}}
+			err := g.MoveSequence(0, 0, 1)
+
+			if tt.expectErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tt.expectErr)
+			}
+
+			if tt.validateFn != nil {
+				tt.validateFn(t, g)
+			}
+		})
+	}
+}
+
+func TestMoveSequence_FlipsTopCard(t *testing.T) {
+
+	src := newPile(
+		makeCardInPile(deck.Spades, deck.Ace, false),
+		makeCardInPile(deck.Spades, deck.Ten, true),
+	)
+	dst := newPile(makeCardInPile(deck.Spades, deck.Jack, true))
+
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{src, dst}}}
+
+	err := g.MoveSequence(0, 1, 1)
+	assert.NoError(t, err)
+
+	top, _ := g.Tableau.Piles[0].TopCard()
+	assert.True(t, top.FaceUp)
+}
+
+func TestMOveSequence_CompletedRun(t *testing.T) {
 	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
 
-	// make a pile all cards apart from an ace
 	dst := newSequenceWithIgnoreRank(deck.Spades, deck.Ace)
 	g.Tableau.Piles[0].AddCards(dst)
-
-	// add the ace to another pile
 	g.Tableau.Piles[1].AddCard(deck.Card{Suit: deck.Spades, Rank: deck.Ace}, true)
 
-	// move the ace to the almost complete pile
 	err := g.MoveSequence(1, 0, 0)
-	assert.NoError(t, err, "unexpected error moving cards: %v", err)
+	assert.NoError(t, err)
 
-	// pile 1 should be empty
-	assert.Equal(t, 0, g.Tableau.Piles[1].Size(), "pile 1 is not empty")
-
-	// run should be recorded as completed
+	assert.Equal(t, 0, g.Tableau.Piles[1].Size())
+	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
 	assert.Equal(t, 1, len(g.Completed))
-
-	// there should be 13 cards in the completed run
 	assert.Equal(t, 13, len(g.Completed[0]))
+}
 
+func TestFullGame_DealRowAfterRunCompletion(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	dst := newSequenceWithIgnoreRank(deck.Spades, deck.Ace)
+	g.Tableau.Piles[0].AddCards(dst)
+	g.Tableau.Piles[1].AddCard(deck.Card{Suit: deck.Spades, Rank: deck.Ace}, true)
+
+	_ = g.MoveSequence(1, 0, 0)
+	assert.Len(t, g.Completed, 1)
+
+	// Add 10 dummy cards to stock for deal
+	for i := 0; i < 10; i++ {
+		g.Stock = append(g.Stock, deck.Card{Suit: deck.Spades, Rank: deck.King})
+	}
+
+	err := g.DealRow()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(g.Stock))
 }
