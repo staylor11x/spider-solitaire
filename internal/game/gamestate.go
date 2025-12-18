@@ -73,6 +73,7 @@ func (g *GameState) DealRow() error {
 		g.Stock = g.Stock[:len(g.Stock)-1]
 		g.Tableau.Piles[i].AddCard(card, true)
 	}
+	g.checkCompletedRuns()
 	return nil
 }
 
@@ -222,7 +223,7 @@ func (g *GameState) checkCompletedRuns() {
 			// add to completed
 			g.Completed = append(g.Completed, removed)
 
-			// flip to card if needed - why is there here?
+			// flip top card if needed
 			_ = pile.FlipTopCardIfFaceDown()
 		}
 	}

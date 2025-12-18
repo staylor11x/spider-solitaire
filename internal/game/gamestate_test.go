@@ -25,6 +25,18 @@ func makeCardInPile(s deck.Suit, r deck.Rank, faceUp bool) CardInPile {
 	}
 }
 
+// newSequence is a method that can be used to build a full sequence
+func newSequence(s deck.Suit) []CardInPile {
+	seq := make([]CardInPile, 0, 13)
+	for r := deck.King; r >= deck.Ace; r-- {
+		seq = append(seq, CardInPile{
+			Card:   deck.Card{Suit: s, Rank: r},
+			FaceUp: true,
+		})
+	}
+	return seq
+}
+
 // newSequenceWithIgnoreRank is a method that can be used to build a sequence with a card missing
 func newSequenceWithIgnoreRank(s deck.Suit, rankToIgnore deck.Rank) []CardInPile {
 	seq := make([]CardInPile, 0, 13)
@@ -253,7 +265,7 @@ func TestMoveSequence_FlipsTopCard(t *testing.T) {
 	assert.True(t, top.FaceUp)
 }
 
-func TestMOveSequence_CompletedRun(t *testing.T) {
+func TestMoveSequence_CompletedRun(t *testing.T) {
 	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
 
 	dst := newSequenceWithIgnoreRank(deck.Spades, deck.Ace)
@@ -267,6 +279,123 @@ func TestMOveSequence_CompletedRun(t *testing.T) {
 	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
 	assert.Equal(t, 1, len(g.Completed))
 	assert.Equal(t, 13, len(g.Completed[0]))
+}
+
+func TestDealRow_CompletesSingleRun(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	// build k -> 2 (missing ace)
+	almostRun := newSequenceWithIgnoreRank(deck.Spades, deck.Ace)
+	g.Tableau.Piles[0].AddCards(almostRun)
+
+	// stock contains exactly one Ace that will land on pile 0
+	g.Stock = []deck.Card{
+		{Suit: deck.Clubs, Rank: deck.King}, // pile 9
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Spades, Rank: deck.Ace}, // pile 0
+	}
+
+	err := g.DealRow()
+	assert.NoError(t, err)
+
+	assert.Len(t, g.Completed, 1)
+	assert.Equal(t, 13, len(g.Completed[0]))
+	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
+}
+
+func TestDealRow_CompletesMultipleRuns(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	// two piles both missing ace
+	g.Tableau.Piles[0].AddCards(newSequenceWithIgnoreRank(deck.Spades, deck.Ace))
+	g.Tableau.Piles[1].AddCards(newSequenceWithIgnoreRank(deck.Hearts, deck.Ace))
+
+	// stock will deal ace to piles 0 and 1
+	g.Stock = []deck.Card{
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Hearts, Rank: deck.Ace}, // pile 1
+		{Suit: deck.Spades, Rank: deck.Ace}, // pile 0
+	}
+
+	err := g.DealRow()
+	assert.NoError(t, err)
+
+	assert.Len(t, g.Completed, 2)
+	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
+	assert.Equal(t, 0, g.Tableau.Piles[1].Size())
+}
+
+func TestDealRow_DoesNotCompleteRunWithFaceDownCard(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	// build K -> 2 but make one card face down
+	seq := newSequenceWithIgnoreRank(deck.Spades, deck.Ace)
+	seq[5].FaceUp = false
+	g.Tableau.Piles[0].AddCards(seq)
+
+	g.Stock = make([]deck.Card, 10)
+	g.Stock[9] = deck.Card{Suit: deck.Spades, Rank: deck.Ace}
+
+	err := g.DealRow()
+	assert.NoError(t, err)
+
+	assert.Len(t, g.Completed, 0)
+	assert.Equal(t, 13, g.Tableau.Piles[0].Size())
+}
+
+func TestCheckCompletedRuns_IsIdempotent(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	run := newSequence(deck.Spades)
+	g.Tableau.Piles[0].AddCards(run)
+
+	g.checkCompletedRuns()
+	assert.Len(t, g.Completed, 1)
+
+	// call again - should not duplicate
+	g.checkCompletedRuns()
+	assert.Len(t, g.Completed, 1)
+}
+
+func TestRunCompletion_ConservesTotalCards(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	total := 0
+
+	run := newSequence(deck.Spades)
+	g.Tableau.Piles[0].AddCards(run)
+
+	for _, pile := range g.Tableau.Piles {
+		total += pile.Size()
+	}
+
+	g.checkCompletedRuns()
+
+	after := 0
+	for _, pile := range g.Tableau.Piles {
+		after += pile.Size()
+	}
+
+	for _, r := range g.Completed {
+		after += len(r)
+	}
+
+	assert.Equal(t, total, after)
 }
 
 func TestFullGame_DealRowAfterRunCompletion(t *testing.T) {
