@@ -223,7 +223,7 @@ func (g *GameState) checkCompletedRuns() {
 			// add to completed
 			g.Completed = append(g.Completed, removed)
 
-			// flip to card if needed - why is there here?
+			// flip top card if needed
 			_ = pile.FlipTopCardIfFaceDown()
 		}
 	}
