@@ -14,19 +14,19 @@ Basic implementation of a spider solitaire game, designed for Ubuntu Linux
 
 ### 🔹 Phase 2 – Core Gameplay Completion
 
-- Run Completion Detection:
+Run Completion Detection:
 
 - Detect when a full suit run from King → Ace exists in a pile.
 
 - Automatically remove the run from the tableau.
 
-- Win/Loss Conditions:
+Win/Loss Conditions:
 
 - Win when all runs (8 total in 2-deck Spider) are completed.
 
 - Lose when no valid moves and no stock left.
 
-- Move Undo (stretch goal for quality-of-life):
+Move Undo (stretch goal for quality-of-life):
 
 - Keep history of moves and allow undo (useful for testing too).
 
