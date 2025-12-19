@@ -15,6 +15,7 @@ const (
 	RestPileCards    = 5  // remaining 6 piles get 5 cards
 	FirstPileCount   = 4  // number of piles that get 6 cards
 	RunLength        = 13 // King to Ace
+	TotalRunsToWin   = 8
 )
 
 // GameState represents the complete state of a spider game
@@ -22,6 +23,7 @@ type GameState struct {
 	Tableau   Tableau
 	Stock     []deck.Card
 	Completed [][]CardInPile
+	Won       bool
 }
 
 // DealInitialGame creates a new spider layout using two decks
@@ -73,7 +75,9 @@ func (g *GameState) DealRow() error {
 		g.Stock = g.Stock[:len(g.Stock)-1]
 		g.Tableau.Piles[i].AddCard(card, true)
 	}
-	g.checkCompletedRuns()
+	if err := g.checkCompletedRuns(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -195,8 +199,9 @@ func (g *GameState) executeMove(src, dst *Pile, startIdx int, sequence []CardInP
 	}
 
 	// check for completed runs
-	g.checkCompletedRuns()
-
+	if err := g.checkCompletedRuns(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -207,7 +212,7 @@ func sequenceEqual(a, b []CardInPile) bool {
 }
 
 // checkCompletedRuns scans each pile for a complete run and removed it if found, storing it in g.Completed
-func (g *GameState) checkCompletedRuns() {
+func (g *GameState) checkCompletedRuns() error {
 
 	for i := range g.Tableau.Piles {
 		pile := &g.Tableau.Piles[i]
@@ -218,15 +223,22 @@ func (g *GameState) checkCompletedRuns() {
 		// look at the last 13 cards
 		last := pile.Cards()[pile.Size()-RunLength:]
 		if isValidRun(last) {
-			removed, _ := pile.RemoveCardsFrom(pile.Size() - RunLength)
+			removed, err := pile.RemoveCardsFrom(pile.Size() - RunLength)
+			if err != nil {
+				return ErrRemoveCardsWithContext(err)
+			}
 
 			// add to completed
 			g.Completed = append(g.Completed, removed)
 
 			// flip top card if needed
-			_ = pile.FlipTopCardIfFaceDown()
+			if err := pile.FlipTopCardIfFaceDown(); err != nil {
+				return ErrFlipWithContext(err)
+			}
 		}
 	}
+	g.checkWinCondition()
+	return nil
 }
 
 // isValidRun checks for a perfect King->Ace descending run in one suit
@@ -259,4 +271,15 @@ func isValidRun(cards []CardInPile) bool {
 	}
 	// must end on an ace
 	return cards[len(cards)-1].Card.Rank == deck.Ace
+}
+
+// checkWinCondition checks if the the number of piles in g.Completed is >= to 8 (The total number of runs to win)
+func (g *GameState) checkWinCondition() {
+	if g.Won {
+		return
+	}
+
+	if len(g.Completed) >= TotalRunsToWin {
+		g.Won = true
+	}
 }
