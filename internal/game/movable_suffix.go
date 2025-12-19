@@ -1,40 +1,46 @@
 package game
 
-// movableSuffix is a method to return the sequence of cards in a pile that can potentially be moved starting from the bottom and traversing the pile upwards.
+// movableSuffix returns the longest movable sequence at the end of a pile.
+// In Spider, you can only move sequences that are:
+// - All face up
+// - Same suit
+// - Descending rank
 func movableSuffix(cards []CardInPile) []CardInPile {
 	if len(cards) == 0 {
 		return nil
 	}
 
-	// start from the top of the pile
-	top := cards[len(cards)-1]
+	// Start from the last card and work backwards
+	lastIdx := len(cards) - 1
 
-	// i don't believe that this will ever happen
-	if !top.FaceUp {
+	// Last card must be face up to be movable
+	if !cards[lastIdx].FaceUp {
 		return nil
 	}
 
-	suffix := []CardInPile{top}
+	// Find the longest valid sequence from the end
+	startIdx := lastIdx
+	for startIdx > 0 {
+		current := cards[startIdx]
+		prev := cards[startIdx-1]
 
-	for i := len(cards) - 2; i >= 0; i-- {
-		curr := cards[i]
-		prev := suffix[0]
-
-		if !curr.FaceUp {
+		// Previous card must be face up
+		if !prev.FaceUp {
 			break
 		}
 
-		if curr.Card.Suit != prev.Card.Suit {
+		// Must be same suit
+		if current.Card.Suit != prev.Card.Suit {
 			break
 		}
 
-		if curr.Card.Rank != prev.Card.Rank+1 {
+		// Must be descending (prev rank = current rank + 1)
+		if prev.Card.Rank != current.Card.Rank+1 {
 			break
 		}
 
-		// prepend
-		suffix = append([]CardInPile{curr}, suffix...)
+		startIdx--
 	}
 
-	return suffix
+	return cards[startIdx:]
 }
