@@ -25,7 +25,7 @@ func makeCardInPile(s deck.Suit, r deck.Rank, faceUp bool) CardInPile {
 	}
 }
 
-// newSequence is a method that can be used to build a full sequence
+// newSequence is a method that can be used to build a full completed sequence
 func newSequence(s deck.Suit) []CardInPile {
 	seq := make([]CardInPile, 0, 13)
 	for r := deck.King; r >= deck.Ace; r-- {
@@ -52,6 +52,9 @@ func newSequenceWithIgnoreRank(s deck.Suit, rankToIgnore deck.Rank) []CardInPile
 	return seq
 }
 
+// Unit Tests
+
+// Note: Do I care that this helper works, or do I care that moves and run detection work?
 func TestIsValidSequence(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -118,6 +121,34 @@ func TestIsValidRun(t *testing.T) {
 	assert.False(t, isValidRun(invalid), "Mixed suits should be invalid")
 }
 
+func TestCheckWinCondition(t *testing.T) {
+	tests := []struct {
+		name          string
+		completedRuns int
+		expectWon     bool
+	}{
+		{"not won at 0 runs", 0, false},
+		{"not won at 7 runs", 7, false},
+		{"won at 8 runs", 8, true},
+		{"won beyond 8 runs", 9, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &GameState{}
+
+			for i := 0; i < tt.completedRuns; i++ {
+				g.Completed = append(g.Completed, newSequence(deck.Spades))
+			}
+			g.checkWinCondition()
+
+			if g.Won != tt.expectWon {
+				t.Fatalf("expected won=%v, got %v", tt.expectWon, g.Won)
+			}
+		})
+	}
+}
+
 // Integration type tests (Public API behavior)
 
 func TestDealInitialGame(t *testing.T) {
@@ -137,7 +168,7 @@ func TestDealInitialGame(t *testing.T) {
 		assert.True(t, top.FaceUp)
 	}
 	assert.Equal(t, 54, totalCards)
-	assert.Equal(t, 50, len(state.Stock))
+	assert.Len(t, state.Stock, 50)
 }
 
 func TestDealRow(t *testing.T) {
@@ -166,6 +197,9 @@ func TestDealRow_FailsWhenStockIsInsufficient(t *testing.T) {
 }
 
 func TestMoveSequence(t *testing.T) {
+
+	var cfde CardFaceDownError
+
 	tests := []struct {
 		name       string
 		src        Pile
@@ -227,7 +261,7 @@ func TestMoveSequence(t *testing.T) {
 				makeCardInPile(deck.Spades, deck.Ten, true),
 			),
 			dst:       newPile(),
-			expectErr: CardFaceDownError{},
+			expectErr: cfde,
 		},
 	}
 	for _, tt := range tests {
@@ -277,8 +311,8 @@ func TestMoveSequence_CompletedRun(t *testing.T) {
 
 	assert.Equal(t, 0, g.Tableau.Piles[1].Size())
 	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
-	assert.Equal(t, 1, len(g.Completed))
-	assert.Equal(t, 13, len(g.Completed[0]))
+	assert.Len(t, g.Completed, 1)
+	assert.Len(t, g.Completed[0], 13)
 }
 
 func TestDealRow_CompletesSingleRun(t *testing.T) {
@@ -307,7 +341,7 @@ func TestDealRow_CompletesSingleRun(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, g.Completed, 1)
-	assert.Equal(t, 13, len(g.Completed[0]))
+	assert.Len(t, g.Completed[0], 13)
 	assert.Equal(t, 0, g.Tableau.Piles[0].Size())
 }
 
@@ -409,11 +443,63 @@ func TestFullGame_DealRowAfterRunCompletion(t *testing.T) {
 	assert.Len(t, g.Completed, 1)
 
 	// Add 10 dummy cards to stock for deal
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		g.Stock = append(g.Stock, deck.Card{Suit: deck.Spades, Rank: deck.King})
 	}
 
 	err := g.DealRow()
 	assert.NoError(t, err)
-	assert.Equal(t, 0, len(g.Stock))
+	assert.Len(t, g.Stock, 0)
+}
+
+func TestGame_WinTriggeredByMoveSequence(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	// Preload 7 completed runs
+	for range 7 {
+		g.Completed = append(g.Completed, newSequence(deck.Hearts))
+	}
+
+	// build an almost complete run (missing ace)
+	run := newSequenceWithIgnoreRank(deck.Hearts, deck.Ace)
+	g.Tableau.Piles[0].AddCards(run)
+
+	// add an ace to another pile
+	g.Tableau.Piles[1].AddCard(deck.Card{Suit: deck.Hearts, Rank: deck.Ace}, true)
+
+	// move the ace onto our almost completed run
+	err := g.MoveSequence(1, 0, 0)
+	assert.NoError(t, err)
+	assert.True(t, g.Won)
+}
+
+func TestGame_WinTriggeredByDealRow(t *testing.T) {
+	g := &GameState{Tableau: Tableau{Piles: [10]Pile{}}}
+
+	// preload 7 completed runs
+	for range 7 {
+		g.Completed = append(g.Completed, newSequence(deck.Clubs))
+	}
+
+	// carefully construct the tableau so that dealing a row completed a run
+	run := newSequenceWithIgnoreRank(deck.Diamonds, deck.Ace)
+	g.Tableau.Piles[0].AddCards(run)
+
+	// build the stock to provide the final ace
+	g.Stock = []deck.Card{
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Clubs, Rank: deck.King},
+		{Suit: deck.Diamonds, Rank: deck.Ace}, // pile 0
+	}
+
+	err := g.DealRow()
+	assert.NoError(t, err)
+	assert.True(t, g.Won)
 }
