@@ -24,6 +24,7 @@ type GameState struct {
 	Stock     []deck.Card
 	Completed [][]CardInPile
 	Won       bool
+	Lost      bool
 }
 
 // DealInitialGame creates a new spider layout using two decks
@@ -78,6 +79,11 @@ func (g *GameState) DealRow() error {
 	if err := g.checkCompletedRuns(); err != nil {
 		return err
 	}
+
+	// only check when there is no more stock
+	if len(g.Stock) == 0 {
+		g.checkLossCondition()
+	}
 	return nil
 }
 
@@ -104,7 +110,16 @@ func (g *GameState) MoveSequence(srcIdx, startIdx, dstIdx int) error {
 	}
 
 	// perform atomic move
-	return g.executeMove(src, dst, startIdx, sequence)
+	err = g.executeMove(src, dst, startIdx, sequence)
+	if err != nil {
+		return err
+	}
+
+	// only check when there is no more stock
+	if len(g.Stock) == 0 {
+		g.checkLossCondition()
+	}
+	return nil
 }
 
 func (g *GameState) validateMoveIndices(srcIdx, startIdx, dstIdx int) error {
@@ -275,11 +290,28 @@ func isValidRun(cards []CardInPile) bool {
 
 // checkWinCondition checks if the the number of piles in g.Completed is >= to 8 (The total number of runs to win)
 func (g *GameState) checkWinCondition() {
-	if g.Won {
+	if g.Won || g.Lost {
 		return
 	}
 
 	if len(g.Completed) >= TotalRunsToWin {
 		g.Won = true
 	}
+}
+
+// checkLossCondition checks if it is game over for the user
+func (g *GameState) checkLossCondition() {
+	if g.Won || g.Lost {
+		return
+	}
+	if hasStock(g.Stock) {
+		return
+	}
+	if hasEmptyPile(g.Tableau.Piles) {
+		return
+	}
+	if hasAnyValidMove(g.Tableau.Piles) {
+		return
+	}
+	g.Lost = true
 }

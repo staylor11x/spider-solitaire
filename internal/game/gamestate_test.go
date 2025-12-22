@@ -503,3 +503,70 @@ func TestGame_WinTriggeredByDealRow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, g.Won)
 }
+
+func TestGame_LostWhenNoMovesAndNoStock(t *testing.T) {
+	g := &GameState{
+		Tableau: Tableau{Piles: [TableauPiles]Pile{}},
+		Stock:   nil,
+	}
+
+	// fill all the piles with blocking cards
+	for i := 0; i < TableauPiles; i++ {
+		g.Tableau.Piles[i] = newPile(
+			makeCardInPile(deck.Spades, deck.Five, true),
+		)
+	}
+
+	g.checkLossCondition()
+	assert.True(t, g.Lost)
+}
+
+func TestGame_NotLostWhenStockExists(t *testing.T) {
+	g := &GameState{
+		Tableau: Tableau{Piles: [TableauPiles]Pile{}},
+		Stock:   []deck.Card{{Suit: deck.Spades, Rank: deck.King}},
+	}
+
+	for i := 0; i < TableauPiles; i++ {
+		g.Tableau.Piles[i] = newPile(
+			makeCardInPile(deck.Spades, deck.Five, true),
+		)
+	}
+
+	g.checkLossCondition()
+	assert.False(t, g.Lost)
+}
+
+func TestGame_NotLostWhenEmptyPileExists(t *testing.T) {
+	g := &GameState{
+		Tableau: Tableau{Piles: [TableauPiles]Pile{}},
+		Stock:   nil,
+	}
+
+	// one empty pile, rest are blocked
+	for i := 1; i < TableauPiles; i++ {
+		g.Tableau.Piles[i] = newPile(
+			makeCardInPile(deck.Hearts, deck.Seven, true),
+		)
+	}
+
+	g.checkLossCondition()
+	assert.False(t, g.Lost)
+}
+
+func TestGame_NotLostWhenValidMoveExists(t *testing.T) {
+	g := &GameState{
+		Tableau: Tableau{Piles: [TableauPiles]Pile{}},
+		Stock:   nil,
+	}
+
+	g.Tableau.Piles[0] = newPile(
+		makeCardInPile(deck.Spades, deck.Ten, true),
+	)
+	g.Tableau.Piles[1] = newPile(
+		makeCardInPile(deck.Spades, deck.Jack, true),
+	)
+
+	g.checkLossCondition()
+	assert.False(t, g.Lost)
+}
