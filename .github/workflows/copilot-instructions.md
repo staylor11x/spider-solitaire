@@ -19,7 +19,6 @@ Principles:
 - Maintain strict separation of engine and UI (Ebiten consumes DTOs)
 
 Coding standards:
-- Keep engine single-threaded and deterministic; avoid goroutines in core rules
 - Accept interfaces where helpful; return concrete types; avoid needless abstractions
 - Use clear naming and small functions; document exported symbols (focus on “why”)
 - Defensive copying at boundaries; don’t expose internal mutable slices
@@ -29,8 +28,6 @@ Coding standards:
 Testing standards:
 - Table-driven tests for move validation, movable suffix, completed runs, win/loss
 - Integration-style tests for end-to-end scenarios via `GameState`
-- Deterministic tests (no randomness without fixed seeds)
-- Use platform helpers in [internal/platform/testtools](internal/platform/testtools)
 
 UI integration (Ebiten):
 - Provide read-only DTOs: CardDTO, PileDTO, GameViewDTO
@@ -39,7 +36,6 @@ UI integration (Ebiten):
 
 Performance guidance:
 - Minimize allocations in hot paths (move detection, suffix computation)
-- Prefer slices/arrays; preallocate when size is known
 - Measure with benchmarks before optimizing
 
 Build & run (Windows focus):
