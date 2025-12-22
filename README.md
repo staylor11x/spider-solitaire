@@ -1,49 +1,85 @@
-# spider-solitaire
-Basic implementation of a spider solitaire game, designed for Ubuntu Linux
+# Spider Solitaire – Project Summary
 
+## Overview
 
-## 🛠️ Roadmap – Features Needed to Complete a Playable Game
+This project implements a rules-complete Spider Solitaire game engine with a strict separation between game logic and presentation (UI). The engine is deterministic, fully testable, and UI-agnostic, enabling multiple frontends (CLI, Ebiten, etc.).
 
-### 🔹 Phase 1 – Technical Cleanup
+## Tech Stack 
 
-- Refactor game package into smaller files: pile.go, tableau.go, gamestate.go.
+- Language: Go
+- UI (planned): Ebiten
+- Testing: Go testing package#
+- Architecture Style: Domain-driven, engine-first design
 
-- Introduce structured error types (e.g., ErrInvalidMove, ErrNotEnoughCards).
+## Core Design Principles
 
-- Optional: Introduce structured logging (zap or zerolog) for debugging moves/deals.
+- Pure game engine (no UI assumptions)
+- Deterministic state transitions
+- Explicit validation before mutation
+- Defensive copying for safety
+- Strong test coverage using table-driven tests
 
-### 🔹 Phase 2 – Core Gameplay Completion
+## Game Engine Structure
 
-Run Completion Detection:
+### Key Types
 
-- Detect when a full suit run from King → Ace exists in a pile.
+- GameState
+  - Owns full game state
+    - Tableau, Stock, Completed runs
+    - Win/Loss flags
+- Tableau → fixed array of Pile
+- Pile → ordered stack of CardInPile
+- CardInPile
+  - Card (Rank, Suit)
+  - FaceUp flag
 
-- Automatically remove the run from the tableau.
+### Core Responsibilities
 
-Win/Loss Conditions:
+- Deal initial game
+- Deal rows from stock
+- Move card sequences atomically
+- Flip cards when exposed
+- Detect completed runs
+- Detect win condition (8 completed runs)
+- Detect loss condition (no stock, no empty piles, no valid moves)
 
-- Win when all runs (8 total in 2-deck Spider) are completed.
+### Move & Rule Validation
 
-- Lose when no valid moves and no stock left.
+- All moves are validated before execution:
+  - Indices
+  - Face-up cards only
+  - Proper descending, same-suit sequences
+  - Destination acceptance rules
+- Moves are atomic: invalid execution restores state
 
-Move Undo (stretch goal for quality-of-life):
+### Loss Detection Logic
 
-- Keep history of moves and allow undo (useful for testing too).
+A loss occurs when:
+1. Stock is empty
+2. No empty tableau piles
+3. No valid moves exist
 
-### 🔹 Phase 3 – UI Integration Prep
+Move detection uses:
+- A movable suffix helper
+- Detection of partial and full sequence moves
+- King-only moves to empty piles
 
-- Define rendering-friendly API:
+## Testing Strategy 
 
-- Methods to expose tableau/stock state in a form the UI can easily consume ([]CardDTO).
+Table-driven unit tests for:
+- Move validation
+- Completed runs
+- Valid move detection
 
-- Preserve face-up/face-down distinction.
+Integration-style tests for:
+- Win condition
+- Loss condition
 
-- Add basic CLI printer for debugging before UI.
+Tests focus on behavior, not implementation details
 
-- Start Ebiten integration:
+## UI Integration Strategy
 
-- Draw piles and cards.
-
-- Handle simple interactions (click/drag or keyboard simulation).
-
-
+- Introduce DTO projection layer:
+  - CardDTO, PileDTO, GameViewDTO
+- UI consumes read-only snapshots
+- No UI code depends on engine internals
