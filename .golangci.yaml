@@ -12,6 +12,9 @@ linters:
   - gofmt
   - revive
   - gocitric
+  settings:
+    importas:
+      alias:
 issues:
   exclude-use-defaults: false
   max-issues-per-linter: 0

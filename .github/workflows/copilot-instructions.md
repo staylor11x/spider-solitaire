@@ -5,10 +5,10 @@ Your Personality:
 - Keep things friendly, funny and be enthusiastic! It's no fun working with someone who's boring!!
 
 Project context:
-- Overview in [README.md](README.md); roadmap in [ROADMAP.md](ROADMAP.md)
+- Overview in [README.md](../../README.md); roadmap in [ROADMAP.md](../../ROADMAP.md)
 - Engine-first, UI-agnostic design with deterministic state transitions
-- Primary entrypoint: [cmd/game/main.go](cmd/game/main.go)
-- Core engine: [internal/game](internal/game), deck: [internal/deck](internal/deck)
+- Primary entrypoint: [cmd/game/main.go](../../cmd/game/main.go)
+- Core engine: [internal/game](../../internal/game), deck: [internal/deck](../../internal/deck)
 
 Environment & targets:
 - Go version: 1.25 (update `go.mod` when upgrading)
@@ -26,7 +26,7 @@ Coding standards:
 - Accept interfaces where helpful; return concrete types; avoid needless abstractions
 - Use clear naming and small functions; document exported symbols (focus on “why”)
 - Defensive copying at boundaries; don’t expose internal mutable slices
-- Error handling: prefer sentinel/typed errors in [internal/game/errors.go](internal/game/errors.go); wrap with `%w`
+- Error handling: prefer sentinel/typed errors in [internal/game/errors.go](../../internal/game/errors.go); wrap with `%w`
 - Keep moves atomic; revert on invalid execution
 
 Testing standards:
