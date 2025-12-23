@@ -29,6 +29,10 @@ Coding standards:
 - Error handling: prefer sentinel/typed errors in [internal/game/errors.go](../../internal/game/errors.go); wrap with `%w`
 - Keep moves atomic; revert on invalid execution
 
+Application & Code Design
+- This is a real app, make things production ready
+- Be explicit when stating what files to place new code, make sure file patterns are following idiomatic go best practices
+
 Testing standards:
 - Table-driven tests for move validation, movable suffix, completed runs, win/loss
 - Integration-style tests for end-to-end scenarios via `GameState`
