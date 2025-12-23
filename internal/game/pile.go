@@ -55,8 +55,8 @@ func (p *Pile) CanAccept(seq []CardInPile) bool {
 	movingTop := seq[0]            // top card in the moving pile
 
 	// must match suit and be exactly one rank lower
-	return top.Card.Suit == movingTop.Card.Suit &&
-		top.Card.Rank == movingTop.Card.Rank+1
+	// return top.Card.Suit == movingTop.Card.Suit &&
+	return top.Card.Rank == movingTop.Card.Rank+1
 
 }
 

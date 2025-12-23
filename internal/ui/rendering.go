@@ -102,6 +102,7 @@ func suitStr(s int) string {
 	}
 }
 
+// drawStats renders stock and completed counts at the top-left
 func drawStats(screen *ebiten.Image, view game.GameViewDTO) {
 	stats := fmt.Sprintf("Stock: %d | Completed: %d | Won: %v | Lost: %v",
 		view.StockCount, view.CompletedCount, view.Won, view.Lost)
@@ -113,6 +114,7 @@ func drawStats(screen *ebiten.Image, view game.GameViewDTO) {
 	text.Draw(screen, stats, uiTextFace, drawOpts)
 }
 
+// drawError shows an ephemeral error message at the top-right (centered in pill)
 func drawError(screen *ebiten.Image, msg string) {
 
 	// near top right
@@ -139,4 +141,22 @@ func drawError(screen *ebiten.Image, msg string) {
 	opts.ColorScale.ScaleWithColor(color.White)
 
 	text.Draw(screen, msg, uiTextFace, opts)
+}
+
+// drawSelectionOverlay highlights the selected suffix (from selectedIndex to top) on a pile.
+func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, col color.RGBA) {
+	if pileIdx < 0 || pileIdx >= len(view.Tableau) {
+		return
+	}
+	pile := view.Tableau[pileIdx]
+	if selectedIndex < 0 || selectedIndex >= len(pile.Cards) {
+		return
+	}
+	x := TableauStartX + pileIdx*PileSpacing
+	y := TableauStartY
+
+	for i := selectedIndex; i < len(pile.Cards); i++ {
+		cy := y + i*CardStackGap
+		vector.FillRect(screen, float32(x), float32(cy), float32(CardWidth), float32(CardHeight), col, false)
+	}
 }
