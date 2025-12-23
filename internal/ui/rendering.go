@@ -39,10 +39,10 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int) {
 		bgColor = CardFaceDownColor
 	}
 
-	// draw card rectangle
+	// card rectangle
 	vector.FillRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), bgColor, false)
 
-	// draw card text
+	// card text
 	var cardText string
 	if card.FaceUp {
 		cardText = formatCard(card)
@@ -109,5 +109,34 @@ func drawStats(screen *ebiten.Image, view game.GameViewDTO) {
 	drawOpts := &text.DrawOptions{}
 	drawOpts.GeoM.Translate(float64(StatsX), float64(StatsY))
 	drawOpts.ColorScale.ScaleWithColor(color.White)
+
 	text.Draw(screen, stats, uiTextFace, drawOpts)
+}
+
+func drawError(screen *ebiten.Image, msg string) {
+
+	// near top right
+	const margin = 20
+	w := screen.Bounds().Dx() // return the width of the screen
+
+	// background pill
+	bgW, bgH := 380, 24
+	bgX := float32(w - margin - bgW)
+	bgY := float32(StatsY)
+
+	// Semi-transparent background
+	vector.FillRect(screen, bgX, bgY, float32(bgW), float32(bgH), color.RGBA{0, 0, 0, 160}, false)
+
+	// center the text within the pill
+	opts := &text.DrawOptions{
+		LayoutOptions: text.LayoutOptions{
+			PrimaryAlign:   text.AlignCenter,
+			SecondaryAlign: text.AlignCenter,
+		},
+	}
+	// translate to the pills center
+	opts.GeoM.Translate(float64(bgX)+float64(bgW)/2, float64(bgY)+float64(bgH)/2)
+	opts.ColorScale.ScaleWithColor(color.White)
+
+	text.Draw(screen, msg, uiTextFace, opts)
 }
