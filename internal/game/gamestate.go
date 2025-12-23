@@ -177,10 +177,10 @@ func isValidSequence(cards []CardInPile) bool {
 		current := cards[i].Card
 		next := cards[i+1].Card
 
-		// must be same suit
-		if current.Suit != next.Suit {
-			return false
-		}
+		// // must be same suit
+		// if current.Suit != next.Suit {
+		// 	return false
+		// }
 
 		// must be descending rank
 		if current.Rank != next.Rank+1 {
