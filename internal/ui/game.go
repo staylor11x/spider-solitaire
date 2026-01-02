@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/staylor11x/spider-solitaire/internal/assets"
 	"github.com/staylor11x/spider-solitaire/internal/game"
 	"github.com/staylor11x/spider-solitaire/internal/logger"
 )
@@ -31,12 +32,14 @@ var (
 
 // Game implements the ebiten.Game interface for Spider Solitaire
 type Game struct {
-	state     *game.GameState  // Engine state, mutated only in Update
-	view      game.GameViewDTO // Read-only snapshot for rendering
-	lastErr   string           // Ephemeral error text
-	errFrames int              // Frames left to display lastErr
+	state *game.GameState  // Engine state, mutated only in Update
+	view  game.GameViewDTO // Read-only snapshot for rendering
+	atlas *CardAtlas       // The cards
 
-	// Mouse selection state for clock-to-move
+	lastErr   string // Ephemeral error text
+	errFrames int    // Frames left to display lastErr
+
+	// Mouse selection state for click-to-move
 	selecting     bool
 	selectedPile  int
 	selectedIndex int
@@ -48,6 +51,10 @@ func NewGame() *Game {
 	if err != nil {
 		panic(err) // TODO: Handle this error gracefully
 	}
+	atlas, err := NewCardAtlas(assets.Files)
+	if err != nil {
+		panic(err) // TODO: handle this gracefully too
+	}
 
 	view := state.View()
 
@@ -56,6 +63,7 @@ func NewGame() *Game {
 	return &Game{
 		state: state,
 		view:  view,
+		atlas: atlas,
 	}
 }
 
@@ -205,14 +213,13 @@ func (g *Game) clearSelection() {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{R: 0, G: 100, B: 0, A: 255})
 
-	drawTableau(screen, g.view)
+	drawTableau(screen, g.view, g.atlas)
 
 	if g.selecting {
 		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, SelectionOverlayCol)
 	}
 
 	drawStats(screen, g.view)
-
 	if g.lastErr != "" && g.errFrames > 0 {
 		drawError(screen, g.lastErr)
 	}
