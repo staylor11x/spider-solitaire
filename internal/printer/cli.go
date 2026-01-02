@@ -39,5 +39,5 @@ func formatCard(c game.CardDTO, opts Options) string {
 		return "##"
 	}
 	card := deck.Card{Suit: deck.Suit(c.Suit), Rank: deck.Rank(c.Rank)}
-	return fmt.Sprintf("%s%s", card.RankName(), card.SuitName())
+	return fmt.Sprintf("%s%s", card.RankName(), card.SuitSymbol())
 }
