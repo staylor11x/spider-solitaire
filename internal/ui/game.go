@@ -6,6 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/staylor11x/spider-solitaire/internal/game"
+	"github.com/staylor11x/spider-solitaire/internal/logger"
 )
 
 const (
@@ -50,6 +51,8 @@ func NewGame() *Game {
 
 	view := state.View()
 
+	logger.Info("NewGame: initial deal (stock=%d, completed=%d, won=%v, lost=%v)", view.StockCount, view.CompletedCount, view.Won, view.Lost)
+
 	return &Game{
 		state: state,
 		view:  view,
@@ -67,23 +70,29 @@ func (g *Game) Update() error {
 func (g *Game) handleKeyboard() {
 	// D = deal a row
 	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+		logger.Debug("DealRow: requested")
 		if err := g.state.DealRow(); err != nil {
 			g.setError(err.Error())
+			logger.Error("DealRow: error: %s", err.Error())
 		} else {
 			g.view = g.state.View()
 			g.clearSelection()
+			logger.Info("DealRow: success (stock=%d, completed=%d)", g.view.StockCount, g.view.CompletedCount)
 		}
 	}
 
 	// R = reset game
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+		logger.Debug("Reset: requested")
 		state, err := game.DealInitialGame()
 		if err != nil {
 			g.setError(err.Error())
+			logger.Error("Reset: error: %s", err.Error())
 		} else {
 			g.state = state
 			g.view = state.View()
 			g.clearSelection()
+			logger.Info("Reset: success (stock=%d, completed=%d)", g.view.StockCount, g.view.CompletedCount)
 		}
 	}
 }
@@ -102,23 +111,29 @@ func (g *Game) handleMouse() {
 		}
 		if cardIdx >= len(g.view.Tableau[pileIdx].Cards) {
 			g.setError("invalid card")
+			logger.Warn("Select: invalid card (pile=%d, idx=%d)", pileIdx, cardIdx)
 			return
 		}
 		if !g.view.Tableau[pileIdx].Cards[cardIdx].FaceUp {
 			g.setError("select a face-up card")
+			logger.Warn("Select: not face-up (pile=%d, idx=%d)", pileIdx, cardIdx)
 			return
 		}
 		g.selecting = true
 		g.selectedPile = pileIdx
 		g.selectedIndex = cardIdx
+		logger.Debug("Select: start (pile=%d, idx=%d)", pileIdx, cardIdx)
 		return
 	}
 	// finish selection, attempt move
 	if ok {
+		logger.Debug("Move: attempt %d:%d -> %d", g.selectedPile, g.selectedIndex, pileIdx)
 		if err := g.performMove(g.selectedPile, g.selectedIndex, pileIdx); err != nil {
 			g.setError(err.Error())
+			logger.Error("Move: error: %s", err.Error())
 		} else {
 			g.view = g.state.View()
+			logger.Info("Move: success %d:%d -> %d (completed=%d)", g.selectedPile, g.selectedIndex, pileIdx, g.view.CompletedCount)
 		}
 	}
 	g.clearSelection()
@@ -177,6 +192,7 @@ func (g *Game) tickError() {
 func (g *Game) setError(msg string) {
 	g.lastErr = msg
 	g.errFrames = errorDisplayDuration
+	logger.Warn("Error: %s", msg)
 }
 
 func (g *Game) clearSelection() {
