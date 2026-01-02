@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/staylor11x/spider-solitaire/internal/deck"
 	"github.com/staylor11x/spider-solitaire/internal/game"
 
 	"golang.org/x/image/font/basicfont"
@@ -15,25 +16,49 @@ import (
 var uiTextFace = text.NewGoXFace(basicfont.Face7x13)
 
 // drawTableau renders all 10 piles from the view snapshot
-func drawTableau(screen *ebiten.Image, view game.GameViewDTO) {
+func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas) {
 	for i, pile := range view.Tableau {
 		x := TableauStartX + i*PileSpacing
 		y := TableauStartY
-		drawPile(screen, pile, x, y)
+		drawPile(screen, pile, x, y, atlas)
 	}
 }
 
 // drawPile renders a single pile at the given position
-func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int) {
+func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas) {
 	for i, card := range pile.Cards {
 		// stack the cards vertically with a small gap
 		cardY := y + i*CardStackGap
-		drawCard(screen, card, x, cardY)
+		drawCard(screen, card, x, cardY, atlas)
 	}
 }
 
-// drawCard renders a single pile at the given position
-func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int) {
+// drawCard renders a single card at the given position
+func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtlas) {
+
+	if atlas != nil {
+		var img *ebiten.Image
+		if card.FaceUp {
+			if im, err := atlas.Card(int(card.Suit), int(card.Rank)); err == nil {
+				img = im
+			}
+		} else {
+			img = atlas.Back()
+		}
+		if img != nil {
+			w, h := img.Size()
+			opts := &ebiten.DrawImageOptions{}
+			// Scale to logical card size if asset size differs
+			sx := float64(CardWidth) / float64(w)
+			sy := float64(CardHeight) / float64(h)
+			opts.GeoM.Scale(sx, sy)
+			opts.GeoM.Translate(float64(x), float64(y))
+			screen.DrawImage(img, opts)
+			return
+		}
+	}
+
+	// Fallback: vector rect + text
 	bgColor := CardFaceUpColor
 	if !card.FaceUp {
 		bgColor = CardFaceDownColor
@@ -65,42 +90,10 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int) {
 
 // formatCard converts a CardDTO to a display string (rank + suit)
 func formatCard(card game.CardDTO) string {
-	rank := rankStr(int(card.Rank))
-	suit := suitStr(int(card.Suit))
-	return fmt.Sprintf("%s%s", rank, suit)
+	c := deck.Card{Suit: deck.Suit(card.Suit), Rank: deck.Rank(card.Rank)}
+	return fmt.Sprintf("%s%s", c.RankName(), c.SuitName())
 }
 
-// rankStr converts rank int to display string
-func rankStr(r int) string {
-	switch r {
-	case 1:
-		return "A"
-	case 11:
-		return "J"
-	case 12:
-		return "Q"
-	case 13:
-		return "K"
-	default:
-		return fmt.Sprintf("%d", r)
-	}
-}
-
-// suitStr converts rank into to display string
-func suitStr(s int) string {
-	switch s {
-	case 0:
-		return "S"
-	case 1:
-		return "H"
-	case 2:
-		return "D"
-	case 3:
-		return "C"
-	default:
-		return "?"
-	}
-}
 
 // drawStats renders stock and completed counts at the top-left
 func drawStats(screen *ebiten.Image, view game.GameViewDTO) {

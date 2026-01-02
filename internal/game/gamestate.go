@@ -277,9 +277,9 @@ func isValidRun(cards []CardInPile) bool {
 		if !cards[i].FaceUp || !cards[i+1].FaceUp {
 			return false
 		}
-		if cards[i].Card.Suit != cards[i+1].Card.Suit {
-			return false
-		}
+		// if cards[i].Card.Suit != cards[i+1].Card.Suit {
+		// 	return false
+		// }
 		if cards[i].Card.Rank != cards[i+1].Card.Rank+1 {
 			return false
 		}

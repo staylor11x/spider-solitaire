@@ -1,6 +1,9 @@
 package deck
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Suit int
 
@@ -53,6 +56,49 @@ type Card struct {
 	Rank Rank
 }
 
+// String returns a human-readable card name (e.g. "Ace of Spades")
 func (c Card) String() string {
 	return fmt.Sprintf("%s of %s", c.Rank, c.Suit)
+}
+
+// RankName returns the rank as a word or number (lowercase)
+func (c Card) RankName() string {
+	return strings.ToLower(c.Rank.String())
+}
+
+// SuitName returns the suit as a word (lowercase)
+func (c Card) SuitName() string {
+	return strings.ToLower(c.Suit.String())
+}
+
+// RankSymbol return the rank as a display character
+func (c Card) RankSymbol() string {
+	switch c.Rank {
+	case Ace:
+		return "A"
+	case Jack:
+		return "J"
+	case Queen:
+		return "Q"
+	case King:
+		return "K"
+	default:
+		return fmt.Sprintf("%d", c.Rank)
+	}
+}
+
+// SuitSymbol return the Unicode suit symbol
+func (c Card) SuitSymbol() string {
+	switch c.Suit {
+	case Spades:
+		return "♠"
+	case Hearts:
+		return "♥"
+	case Diamonds:
+		return "♦"
+	case Clubs:
+		return "♣"
+	default:
+		return "?"
+	}
 }

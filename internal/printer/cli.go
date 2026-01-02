@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/staylor11x/spider-solitaire/internal/deck"
 	"github.com/staylor11x/spider-solitaire/internal/game"
 )
 
@@ -37,50 +38,6 @@ func formatCard(c game.CardDTO, opts Options) string {
 	if !c.FaceUp {
 		return "##"
 	}
-	return fmt.Sprintf("%s%s", rankStr(int(c.Rank)), suitStr(int(c.Suit), opts))
-}
-
-func rankStr(r int) string {
-	switch r {
-	case 1:
-		return "A"
-	case 11:
-		return "J"
-	case 12:
-		return "Q"
-	case 13:
-		return "K"
-	default:
-		return fmt.Sprintf("%d", r)
-	}
-}
-
-func suitStr(s int, opts Options) string {
-	if opts.UnicodeSuits {
-		switch s {
-		case 0:
-			return "♠"
-		case 1:
-			return "♥"
-		case 2: 
-			return "♦"
-		case 3:
-			return "♣"
-		default:
-			return "?"
-		}
-	}
-	// ASCI fallback
-	switch s {
-	case 0:
-		return "S"
-	case 1:
-		return "H"
-	case 2: 
-		return "D"
-	case 3:
-		return "C"
-	default:
-		return "?"
-	}
+	card := deck.Card{Suit: deck.Suit(c.Suit), Rank: deck.Rank(c.Rank)}
+	return fmt.Sprintf("%s%s", card.RankName(), card.SuitSymbol())
 }
