@@ -26,6 +26,11 @@ func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas) 
 
 // drawPile renders a single pile at the given position
 func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas) {
+	// If the pile is empty, render a faint placeholder to indicate a valid drop target
+	if len(pile.Cards) == 0 {
+		drawEmptyPilePlaceholder(screen, x, y)
+		return
+	}
 	for i, card := range pile.Cards {
 		// stack the cards vertically with a small gap
 		cardY := y + i*CardStackGap
@@ -94,7 +99,6 @@ func formatCard(card game.CardDTO) string {
 	return fmt.Sprintf("%s%s", c.RankName(), c.SuitName())
 }
 
-
 // drawStats renders stock and completed counts at the top-left
 func drawStats(screen *ebiten.Image, view game.GameViewDTO) {
 	stats := fmt.Sprintf("Stock: %d | Completed: %d | Won: %v | Lost: %v",
@@ -152,4 +156,15 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 		cy := y + i*CardStackGap
 		vector.FillRect(screen, float32(x), float32(cy), float32(CardWidth), float32(CardHeight), col, false)
 	}
+}
+
+func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int) {
+	const borderWidth = 2
+	// Faint fill and border for visibility on table felt
+	fill := color.RGBA{R: 0, G: 0, B: 0, A: 30}
+	border := color.RGBA{R: 255, G: 255, B: 255, A: 90}
+
+	vector.FillRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), fill, false)
+	vector.StrokeRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), borderWidth, border, false)
+
 }

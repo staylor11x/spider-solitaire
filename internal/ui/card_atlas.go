@@ -21,7 +21,7 @@ func NewCardAtlas(fsys fs.FS) (*CardAtlas, error) {
 		fs:    fsys,
 		cache: make(map[string]*ebiten.Image),
 	}
-	b, err := a.loadPNG("images/card-back/card-back-red.png")
+	b, err := a.loadPNG("images/card-back/card-back-black.png")
 	if err != nil {
 		return nil, fmt.Errorf("load card back: %w", err)
 	}
