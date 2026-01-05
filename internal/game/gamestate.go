@@ -39,7 +39,7 @@ func DealInitialGame() (*GameState, error) {
 
 	// deal tableau
 	t := &Tableau{}
-	for i := range TableauPiles - 1 {
+	for i := range TableauPiles {
 		numCards := RestPileCards
 		if i < FirstPileCount {
 			numCards = FirstPileCards
