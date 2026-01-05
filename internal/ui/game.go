@@ -168,6 +168,14 @@ func (g *Game) hitTest(mx, my int) (pileIdx, cardIdx int, ok bool) {
 			continue
 		}
 		y := TableauStartY
+		// If the pile is empty, treat clicks within the column's base area as valid
+		if len(pile.Cards) == 0 {
+			if my >= y && my < y+CardHeight {
+				return i, 0, true
+			}
+			// no cards and click outside base area: continue searching
+			continue
+		}
 		// Cards overlap; check top-most first
 		for j := len(pile.Cards) - 1; j >= 0; j-- {
 			cy := y + j*CardStackGap
