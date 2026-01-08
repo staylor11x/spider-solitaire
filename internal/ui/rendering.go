@@ -51,7 +51,8 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtla
 			img = atlas.Back()
 		}
 		if img != nil {
-			w, h := img.Size()
+			w := img.Bounds().Dx()
+			h := img.Bounds().Dy()
 			opts := &ebiten.DrawImageOptions{}
 			// Scale to logical card size if asset size differs
 			sx := float64(CardWidth) / float64(w)
