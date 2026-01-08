@@ -19,6 +19,8 @@ const (
 	TableauStartY = 150
 	StatsX        = 20
 	StatsY        = 20
+	LogicalWidth  = 1280
+	LogicalHeight = 720
 
 	errorDisplayDuration = 180
 )
@@ -147,16 +149,10 @@ func (g *Game) handleMouse() {
 	g.clearSelection()
 }
 
-// logicalCursor maps the OS/window cursor to logical coordinates (handles resize scaling)
+// logicalCursor maps the OS/window cursor to logical coordinates
+// Ebiten returns cursor positions in Layout-space, so no manual scaling is needed!
 func (g *Game) logicalCursor() (lx, ly int) {
-	wx, wy := ebiten.WindowSize()
-	if wx <= 0 || wy <= 0 {
-		return 0, 0
-	}
-	mx, my := ebiten.CursorPosition()
-	lx = mx * 1280 / wx
-	ly = my * 720 / wy
-	return
+	return ebiten.CursorPosition()
 }
 
 // hitTest finds the top-most card under the cursor, returning pile and card indices
@@ -233,10 +229,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 }
 
-// Layout return the logical screen dimensions
-// Ebiten will scale this to fit the actual window size, but you always draw in 1280x720 coordinates
+// Layout returns the logical screen dimensions (fixed).
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 1280, 720
+	return LogicalWidth, LogicalHeight
 }
 
 // performMove executes the engine move via MoveSequence
