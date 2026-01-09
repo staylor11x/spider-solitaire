@@ -21,64 +21,56 @@ func hasStock(stock []deck.Card) bool {
 
 // canPlaceOn is a method to check if the moving card can be placed on the target
 func canPlaceOn(moving deck.Card, target deck.Card) bool {
-	return moving.Suit == target.Suit && moving.Rank+1 == target.Rank
+	return moving.Rank+1 == target.Rank
 }
 
 // hasAnyValidMove is a method to check if there are any valid moves currently available in the game
+// This includes:
+// - Moving any card/sequence to an empty pile
+// - Moving any partial or full sequence to stack on another pile
+// - Cross-suit stacking (any card one rank higher)
+// TODO: Check the cyclomatic complexity of this function, is this clean code??
 func hasAnyValidMove(piles [TableauPiles]Pile) bool {
-	// Build a list of movable sequences once
-	type movableSeq struct {
-		pileIdx    int
-		topCard    deck.Card
-		canMoveAll bool // true if entire sequence starting with King
-	}
-
-	var sequences []movableSeq
-
 	for i, pile := range piles {
-		suffix := movableSuffix(pile.Cards())
+		cards := pile.Cards()
+		if len(cards) == 0 {
+			continue
+		}
+
+		// Get the movable suffix (face-up, descending, same-suit run from the top)
+		suffix := movableSuffix(cards)
 		if len(suffix) == 0 {
 			continue
 		}
 
-		sequences = append(sequences, movableSeq{
-			pileIdx:    i,
-			topCard:    suffix[0].Card,
-			canMoveAll: suffix[0].Card.Rank == deck.King,
-		})
-	}
+		// Check if any sequence can be placed somewhere
+		// suffix[0] is the deepest movable card (e.g. 9S)
+		// suffix[len-1] is the top card (e.g. 7S)
+		// We can move: full (9-8-7), partial (8-7), or just top (7)
+		for startIdx := range suffix {
+			movingCard := suffix[startIdx].Card
 
-	// Check if any sequence can be placed somewhere
-	for _, seq := range sequences {
-		// Kings can go to empty piles (Apparently only kings?)
-		if seq.canMoveAll {
-			for j, pile := range piles {
-				if j != seq.pileIdx && pile.Size() == 0 {
+			for j, targetPile := range piles {
+				if j == i {
+					continue
+				}
+
+				// Any sequence can move to an empty pile
+				if targetPile.Size() == 0 {
+					return true
+				}
+
+				// Check if this sub-sequence can stack on the target pile
+				top, err := targetPile.TopCard()
+				if err != nil || !top.FaceUp {
+					continue
+				}
+
+				if canPlaceOn(movingCard, top.Card) {
 					return true
 				}
 			}
 		}
-
-		// Check if sequence can be placed on another pile
-		for j, pile := range piles {
-			if j == seq.pileIdx {
-				continue
-			}
-
-			if pile.Size() == 0 {
-				continue // Already checked King moves above
-			}
-
-			top, err := pile.TopCard()
-			if err != nil || !top.FaceUp {
-				continue
-			}
-
-			if canPlaceOn(seq.topCard, top.Card) {
-				return true
-			}
-		}
 	}
-
 	return false
 }

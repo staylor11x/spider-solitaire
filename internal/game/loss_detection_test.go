@@ -40,19 +40,16 @@ func TestHasAnyValidMove(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "movable suffix exists but no valid destination", // This may have to change in the future if we decide to allow non-kings to move to empty slots
+			name: "non king can move to empty pile",
 			piles: func() [TableauPiles]Pile {
 				var p [TableauPiles]Pile
 				p[0] = newPile(
 					makeCardInPile(deck.Spades, deck.Ten, true),
 					makeCardInPile(deck.Spades, deck.Nine, true),
 				)
-				p[1] = newPile(
-					makeCardInPile(deck.Hearts, deck.Queen, true),
-				)
 				return p
 			}(),
-			want: false,
+			want: true,
 		},
 		{
 			name: "valid run buried under invalid card",
@@ -65,12 +62,47 @@ func TestHasAnyValidMove(t *testing.T) {
 					makeCardInPile(deck.Spades, deck.Ace, true),
 					makeCardInPile(deck.Hearts, deck.Queen, true), // blocks the run
 				)
+				// the potentially valid move
 				p[1] = newPile(
 					makeCardInPile(deck.Clubs, deck.Five, true),
 				)
+				// fill the rest of the piles
+				for i := 2; i < TableauPiles; i++ {
+					p[i] = newPile(
+						makeCardInPile(deck.Clubs, deck.Ace, true),
+					)
+				}
 				return p
 			}(),
 			want: false,
+		},
+		{
+			name: "no valid moves - all piles blocked",
+			piles: func() [TableauPiles]Pile {
+				var p [TableauPiles]Pile
+				// All the piles have aces (lowest rank, can't place on anything)
+				for i := range TableauPiles {
+					p[i] = newPile(
+						makeCardInPile(deck.Spades, deck.Ace, true),
+					)
+				}
+				return p
+			}(),
+			want: false,
+		},
+		{
+			name: "cross-suit stacking allowed",
+			piles: func() [TableauPiles]Pile {
+				var p [TableauPiles]Pile
+				p[0] = newPile(
+					makeCardInPile(deck.Hearts, deck.Seven, true),
+				)
+				p[1] = newPile(
+					makeCardInPile(deck.Spades, deck.Eight, true),
+				)
+				return p
+			}(),
+			want: true,
 		},
 	}
 
