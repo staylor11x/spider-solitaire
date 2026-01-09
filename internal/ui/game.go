@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image/color"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -31,6 +32,8 @@ var (
 	TextColor           = color.RGBA{R: 0, G: 0, B: 0, A: 255}
 	SelectionOverlayCol = color.RGBA{R: 255, G: 215, B: 0, A: 90}
 )
+
+var debugOverlay = os.Getenv("SPIDER_FORCE_OVERLAY")
 
 // Game implements the ebiten.Game interface for Spider Solitaire
 type Game struct {
@@ -226,6 +229,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	drawStats(screen, g.view)
 	if g.lastErr != "" && g.errFrames > 0 {
 		drawError(screen, g.lastErr)
+	}
+
+	if g.view.Won {
+		drawWinLossOverlay(screen, "You Win!")
+	} else if g.view.Lost {
+		drawWinLossOverlay(screen, "Game Over :(")
+	} else if debugOverlay == "win" {
+		// debug overlay for testing
+		drawWinLossOverlay(screen, "You Win!")
+	} else if debugOverlay == "loss" {
+		drawWinLossOverlay(screen, "Game Over :'(")
 	}
 }
 

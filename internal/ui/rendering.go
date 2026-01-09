@@ -169,3 +169,24 @@ func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int) {
 	vector.StrokeRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), borderWidth, border, false)
 
 }
+
+// drawWinLossOverlay darkens the background and renders a centered message
+func drawWinLossOverlay(screen *ebiten.Image, msg string) {
+	b := screen.Bounds()
+	w, h := b.Dx(), b.Dy()
+
+	// Dim the whole screen for contrast
+	vector.FillRect(screen, 0, 0, float32(w), float32(h), color.RGBA{0, 0, 0, 160}, false)
+
+	// center the text
+	opts := &text.DrawOptions{
+		LayoutOptions: text.LayoutOptions{
+			PrimaryAlign:   text.AlignCenter,
+			SecondaryAlign: text.AlignCenter,
+		},
+	}
+	opts.GeoM.Translate(float64(w)/2, float64(h)/2)
+	opts.ColorScale.ScaleWithColor(color.RGBA{255, 255, 255, 255})
+
+	text.Draw(screen, msg, uiTextFace, opts)
+}
