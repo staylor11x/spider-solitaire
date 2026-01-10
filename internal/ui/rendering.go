@@ -195,13 +195,27 @@ func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
 	w, h := b.Dx(), b.Dy()
 
 	vector.FillRect(screen, 0, 0, float32(w), float32(h), theme.Colors.HelpOverlayBG, false)
-
-	helpText := "Controls: \n\n[D] - Deal Row \n[R] - Reset Game\n[H] - Toggle Help"
-
-	opts := &text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{PrimaryAlign: text.AlignCenter, SecondaryAlign: text.AlignCenter},
+	helpLines := []string{
+		"Controls",
+		"",
+		"[D] - Deal Row",
+		"[R] - Reset Game",
+		"[H] - Toggle Help",
 	}
-	opts.GeoM.Translate(float64(w)/2, float64(h)/2)
-	opts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
-	text.Draw(screen, helpText, uiTextFace, opts)
+
+	lineHeight := uiTextFace.Metrics().HLineGap + uiTextFace.Metrics().HAscent + uiTextFace.Metrics().HDescent
+	totalHeight := float64(len(helpLines)) * lineHeight
+	startY := (float64(h) - totalHeight) / 2
+
+	for i, line := range helpLines {
+		opts := &text.DrawOptions{
+			LayoutOptions: text.LayoutOptions{
+				PrimaryAlign: text.AlignCenter,
+			},
+		}
+		opts.GeoM.Translate(float64(w)/2, startY+float64(i)*lineHeight)
+		opts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
+		text.Draw(screen, line, uiTextFace, opts)
+	}
+
 }
