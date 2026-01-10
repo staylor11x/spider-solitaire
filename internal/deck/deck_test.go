@@ -84,3 +84,50 @@ func TestDraw(t *testing.T) {
 	_, err = deck.Draw()
 	assert.Error(t, err, "drawing from empty deck should error")
 }
+
+func TestNewSpiderDEck(t *testing.T) {
+	t.Run("One Suit", func(t *testing.T) {
+		d := NewSpiderDeck(OneSuit)
+		assert.Equal(t, 104, d.Size())
+
+		counts := make(map[Card]int)
+		for _, c := range d.Cards() {
+			counts[c]++
+		}
+
+		assert.Equal(t, 13, len(counts), "should have 13 unique cards")
+		for _, count := range counts {
+			assert.Equal(t, 8, count, "each card should appear 8 times")
+		}
+	})
+
+	t.Run("Two Suits", func(t *testing.T) {
+		d := NewSpiderDeck(TwoSuits)
+		assert.Equal(t, 104, d.Size())
+
+		counts := make(map[Card]int)
+		for _, c := range d.Cards() {
+			counts[c]++
+		}
+
+		assert.Equal(t, 26, len(counts), "should have 26 unique cards")
+		for _, count := range counts {
+			assert.Equal(t, 4, count, "each card should appear 4 times")
+		}
+	})
+
+	t.Run("Four Suits", func(t *testing.T) {
+		d := NewSpiderDeck(FourSuits)
+		assert.Equal(t, 104, d.Size())
+
+		counts := make(map[Card]int)
+		for _, c := range d.Cards() {
+			counts[c]++
+		}
+
+		assert.Equal(t, 52, len(counts), "should have 52 unique cards")
+		for _, count := range counts {
+			assert.Equal(t, 2, count, "each card should appear 2 times")
+		}
+	})
+}

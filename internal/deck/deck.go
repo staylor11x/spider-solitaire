@@ -6,6 +6,51 @@ import (
 	"time"
 )
 
+type SuitCount int
+type DeckCount int
+
+const (
+	OneSuit   SuitCount = 1
+	TwoSuits  SuitCount = 2
+	FourSuits SuitCount = 4
+
+	OneSuitDeckCount  DeckCount = 8
+	TwoSuitDeckCount  DeckCount = 4
+	FourSuitDeckCount DeckCount = 2
+)
+
+// NewSpiderDeck creates a 104-card deck for Spider Solitaire with the specified number of suits
+func NewSpiderDeck(suitCount SuitCount) *Deck {
+	cards := make([]Card, 0, 104)
+	switch suitCount {
+	case OneSuit:
+		// 8 decks of one suit
+		for range OneSuitDeckCount {
+			for r := Ace; r <= King; r++ {
+				cards = append(cards, Card{Suit: Spades, Rank: r})
+			}
+		}
+	case TwoSuits:
+		suits := []Suit{Spades, Hearts}
+		for range TwoSuitDeckCount {
+			for _, s := range suits {
+				for r := Ace; r <= King; r++ {
+					cards = append(cards, Card{Suit: s, Rank: r})
+				}
+			}
+		}
+	case FourSuits:
+		for range FourSuitDeckCount {
+			for s := Spades; s <= Clubs; s++ {
+				for r := Ace; r <= King; r++ {
+					cards = append(cards, Card{Suit: s, Rank: r})
+				}
+			}
+		}
+	}
+	return &Deck{cards: cards}
+}
+
 // Deck represents a standard deck (or n decks) of cards
 type Deck struct {
 	cards []Card
@@ -44,7 +89,7 @@ func NewMultiDeck(n int) Deck {
 	return Deck{cards}
 }
 
-// Shuffle randomises the order of the deck
+// Shuffle randomizes the order of the deck
 func (d *Deck) Shuffle() {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	r.Shuffle(len(d.cards), func(i, j int) {

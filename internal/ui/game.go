@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/staylor11x/spider-solitaire/internal/assets"
+	"github.com/staylor11x/spider-solitaire/internal/deck"
 	"github.com/staylor11x/spider-solitaire/internal/game"
 	"github.com/staylor11x/spider-solitaire/internal/logger"
 )
@@ -37,9 +38,10 @@ var debugOverlay = os.Getenv("SPIDER_FORCE_OVERLAY")
 
 // Game implements the ebiten.Game interface for Spider Solitaire
 type Game struct {
-	state *game.GameState  // Engine state, mutated only in Update
-	view  game.GameViewDTO // Read-only snapshot for rendering
-	atlas *CardAtlas       // The cards
+	state     *game.GameState  // Engine state, mutated only in Update
+	view      game.GameViewDTO // Read-only snapshot for rendering
+	atlas     *CardAtlas       // The cards
+	suitCount deck.SuitCount   // Store the difficulty
 
 	lastErr   string // Ephemeral error text
 	errFrames int    // Frames left to display lastErr
@@ -51,8 +53,8 @@ type Game struct {
 }
 
 // NewGame create a new Ebiten game instance
-func NewGame() *Game {
-	state, err := game.DealInitialGame()
+func NewGame(suitCount deck.SuitCount) *Game {
+	state, err := game.DealInitialGame(suitCount)
 	if err != nil {
 		panic(err) // TODO: Handle this error gracefully
 	}
@@ -66,9 +68,10 @@ func NewGame() *Game {
 	logger.Info("NewGame: initial deal (stock=%d, completed=%d, won=%v, lost=%v)", view.StockCount, view.CompletedCount, view.Won, view.Lost)
 
 	return &Game{
-		state: state,
-		view:  view,
-		atlas: atlas,
+		state:     state,
+		view:      view,
+		atlas:     atlas,
+		suitCount: suitCount,
 	}
 }
 
@@ -97,7 +100,7 @@ func (g *Game) handleKeyboard() {
 	// R = reset game
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		logger.Debug("Reset: requested")
-		state, err := game.DealInitialGame()
+		state, err := game.DealInitialGame(g.suitCount)
 		if err != nil {
 			g.setError(err.Error())
 			logger.Error("Reset: error: %s", err.Error())

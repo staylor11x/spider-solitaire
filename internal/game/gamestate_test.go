@@ -152,7 +152,7 @@ func TestCheckWinCondition(t *testing.T) {
 // Integration type tests (Public API behavior)
 
 func TestDealInitialGame(t *testing.T) {
-	state, err := DealInitialGame()
+	state, err := DealInitialGame(deck.FourSuits)
 	assert.NoError(t, err)
 
 	totalCards := 0
@@ -172,7 +172,7 @@ func TestDealInitialGame(t *testing.T) {
 }
 
 func TestDealRow(t *testing.T) {
-	state, err := DealInitialGame()
+	state, err := DealInitialGame(deck.FourSuits)
 	assert.NoError(t, err)
 
 	originalStock := len(state.Stock)
@@ -189,7 +189,7 @@ func TestDealRow(t *testing.T) {
 }
 
 func TestDealRow_FailsWhenStockIsInsufficient(t *testing.T) {
-	state, _ := DealInitialGame()
+	state, _ := DealInitialGame(deck.FourSuits)
 	state.Stock = state.Stock[:5]
 
 	err := state.DealRow()
@@ -240,10 +240,25 @@ func TestMoveSequence(t *testing.T) {
 			expectErr: ErrInvalidSequence,
 		},
 		{
-			name:      "Invalid destination wrong suit",
+			name:      "Cross-suit stacking allowed for single cards",
 			src:       newPile(makeCardInPile(deck.Spades, deck.Ten, true)),
 			dst:       newPile(makeCardInPile(deck.Hearts, deck.Jack, true)),
-			expectErr: ErrDestinationNotAccepting,
+			expectErr: nil,
+			validateFn: func(t *testing.T, g *GameState) {
+				assert.Equal(t, 0, g.Tableau.Piles[0].Size(), "source should be empty")
+				assert.Equal(t, 2, g.Tableau.Piles[1].Size(), "destination should have 2 cards")
+			},
+		},
+		{
+			name: "Cannot move cross-suit sequence",
+			src: newPile(
+				makeCardInPile(deck.Hearts, deck.Jack, true),
+				makeCardInPile(deck.Spades, deck.Ten, true),
+				makeCardInPile(deck.Spades, deck.Nine, true),
+			),
+			dst:       newPile(makeCardInPile(deck.Clubs, deck.Queen, true)),
+			startIdx:  1,
+			expectErr: ErrInvalidSequence,
 		},
 		{
 			name:      "Move into empty pile allowed",
