@@ -54,8 +54,8 @@ func (p *Pile) CanAccept(seq []CardInPile) bool {
 	top := p.cards[len(p.cards)-1] // top card in the destination pile
 	movingTop := seq[0]            // top card in the moving pile
 
-	// must match suit and be exactly one rank lower
-	// return top.Card.Suit == movingTop.Card.Suit &&
+	// Spider Solitaire allows cross-suit stacking (rank only matters)
+	// Suit matching is enforced for sequences in validateMoveSequence
 	return top.Card.Rank == movingTop.Card.Rank+1
 
 }

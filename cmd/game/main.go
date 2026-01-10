@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/staylor11x/spider-solitaire/internal/deck"
 	spiderui "github.com/staylor11x/spider-solitaire/internal/ui"
 )
 
@@ -15,7 +16,7 @@ func main() {
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
 	// create the game instance
-	game := spiderui.NewGame()
+	game := spiderui.NewGame(deck.OneSuit)
 
 	// run the game loop, this blocks until the window closes or an error occurs
 	if err := ebiten.RunGame(game); err != nil {

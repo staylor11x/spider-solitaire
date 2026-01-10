@@ -28,9 +28,9 @@ type GameState struct {
 }
 
 // DealInitialGame creates a new spider layout using two decks
-func DealInitialGame() (*GameState, error) {
+func DealInitialGame(suitCount deck.SuitCount) (*GameState, error) {
 
-	d := deck.NewMultiDeck(2)
+	d := deck.NewSpiderDeck(suitCount)
 	d.Shuffle()
 
 	if d.Size() != TotalSpiderCards {
@@ -177,10 +177,10 @@ func isValidSequence(cards []CardInPile) bool {
 		current := cards[i].Card
 		next := cards[i+1].Card
 
-		// // must be same suit
-		// if current.Suit != next.Suit {
-		// 	return false
-		// }
+		// must be same suit
+		if current.Suit != next.Suit {
+			return false
+		}
 
 		// must be descending rank
 		if current.Rank != next.Rank+1 {
@@ -277,9 +277,9 @@ func isValidRun(cards []CardInPile) bool {
 		if !cards[i].FaceUp || !cards[i+1].FaceUp {
 			return false
 		}
-		// if cards[i].Card.Suit != cards[i+1].Card.Suit {
-		// 	return false
-		// }
+		if cards[i].Card.Suit != cards[i+1].Card.Suit {
+			return false
+		}
 		if cards[i].Card.Rank != cards[i+1].Card.Rank+1 {
 			return false
 		}
