@@ -1,6 +1,11 @@
 package ui
 
-import "image/color"
+import (
+	"image/color"
+
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"golang.org/x/image/font/basicfont"
+)
 
 type Layout struct {
 	CardWidth            int
@@ -26,15 +31,15 @@ type Colors struct {
 	ErrorPillText     color.RGBA
 	HelpOverlayBG     color.RGBA
 	HelpOverlayText   color.RGBA
-	PlaceholderFill   color.RGBA
-	PlaceholderStroke color.RGBA
-	HoverOverlay      color.RGBA
+	PlaceholderBG     color.RGBA
+	PlaceholderBorder color.RGBA
 }
 
 // Theme combines layout and color definition
 type Theme struct {
 	Layout Layout
 	Colors Colors
+	Font   *text.GoXFace
 }
 
 var DefaultTheme = Theme{
@@ -61,8 +66,8 @@ var DefaultTheme = Theme{
 		ErrorPillText:     color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		HelpOverlayBG:     color.RGBA{R: 0, G: 0, B: 0, A: 200},
 		HelpOverlayText:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		PlaceholderFill:   color.RGBA{R: 255, G: 255, B: 255, A: 20},
-		PlaceholderStroke: color.RGBA{R: 255, G: 255, B: 255, A: 50},
-		HoverOverlay:      color.RGBA{R: 255, G: 255, B: 255, A: 30},
+		PlaceholderBG:     color.RGBA{R: 255, G: 255, B: 255, A: 20},
+		PlaceholderBorder: color.RGBA{R: 255, G: 255, B: 255, A: 50},
 	},
+	Font: text.NewGoXFace(basicfont.Face7x13),
 }

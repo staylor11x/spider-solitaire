@@ -8,11 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/staylor11x/spider-solitaire/internal/deck"
 	"github.com/staylor11x/spider-solitaire/internal/game"
-
-	"golang.org/x/image/font/basicfont"
 )
-
-var uiTextFace = text.NewGoXFace(basicfont.Face7x13)
 
 // drawTableau renders all 10 piles from the view snapshot
 func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme) {
@@ -90,7 +86,7 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtla
 	drawOpts.GeoM.Translate(float64(x+theme.Layout.CardWidth/2), float64(y+theme.Layout.CardHeight/2))
 	drawOpts.ColorScale.ScaleWithColor(theme.Colors.CardText)
 
-	text.Draw(screen, cardText, uiTextFace, drawOpts)
+	text.Draw(screen, cardText, theme.Font, drawOpts)
 }
 
 // formatCard converts a CardDTO to a display string (rank + suit)
@@ -108,7 +104,7 @@ func drawStats(screen *ebiten.Image, view game.GameViewDTO, theme *Theme) {
 	drawOpts.GeoM.Translate(float64(theme.Layout.StatsX), float64(theme.Layout.StatsY))
 	drawOpts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
 
-	text.Draw(screen, stats, uiTextFace, drawOpts)
+	text.Draw(screen, stats, theme.Font, drawOpts)
 }
 
 // drawError shows an ephemeral error message at the top-right (centered in pill)
@@ -137,7 +133,7 @@ func drawError(screen *ebiten.Image, msg string, theme *Theme) {
 	opts.GeoM.Translate(float64(bgX)+float64(bgW)/2, float64(bgY)+float64(bgH)/2)
 	opts.ColorScale.ScaleWithColor(theme.Colors.ErrorPillText)
 
-	text.Draw(screen, msg, uiTextFace, opts)
+	text.Draw(screen, msg, theme.Font, opts)
 }
 
 // drawSelectionOverlay highlights the selected suffix (from selectedIndex to top) on a pile.
@@ -161,8 +157,8 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int, theme *Theme) {
 	const borderWidth = 2
 	// Faint fill and border for visibility on table felt
-	fill := theme.Colors.PlaceholderFill
-	border := theme.Colors.PlaceholderStroke
+	fill := theme.Colors.PlaceholderBG
+	border := theme.Colors.PlaceholderBorder
 
 	vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), fill, false)
 	vector.StrokeRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), borderWidth, border, false)
@@ -187,7 +183,7 @@ func drawWinLossOverlay(screen *ebiten.Image, msg string, theme *Theme) {
 	opts.GeoM.Translate(float64(w)/2, float64(h)/2)
 	opts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
 
-	text.Draw(screen, msg, uiTextFace, opts)
+	text.Draw(screen, msg, theme.Font, opts)
 }
 
 func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
@@ -198,12 +194,15 @@ func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
 	helpLines := []string{
 		"Controls",
 		"",
+		"Click - Select/Move Cards",
 		"[D] - Deal Row",
 		"[R] - Reset Game",
 		"[H] - Toggle Help",
+		"",
+		"Press [H] to close",
 	}
 
-	lineHeight := uiTextFace.Metrics().HLineGap + uiTextFace.Metrics().HAscent + uiTextFace.Metrics().HDescent
+	lineHeight := theme.Font.Metrics().HLineGap + theme.Font.Metrics().HAscent + theme.Font.Metrics().HDescent
 	totalHeight := float64(len(helpLines)) * lineHeight
 	startY := (float64(h) - totalHeight) / 2
 
@@ -215,7 +214,7 @@ func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
 		}
 		opts.GeoM.Translate(float64(w)/2, startY+float64(i)*lineHeight)
 		opts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
-		text.Draw(screen, line, uiTextFace, opts)
+		text.Draw(screen, line, theme.Font, opts)
 	}
 
 }
