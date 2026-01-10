@@ -107,6 +107,12 @@ func (g *Game) handleMouse() {
 		if !ok {
 			return
 		}
+		// Check for empty pile first
+		if len(g.view.Tableau[pileIdx].Cards) == 0 {
+			g.setError("cannot select from empty pile")
+			logger.Warn("Select: empty pile (pile=%d)", pileIdx)
+			return
+		}
 		if cardIdx >= len(g.view.Tableau[pileIdx].Cards) {
 			g.setError("invalid card")
 			logger.Warn("Select: invalid card (pile=%d, idx=%d)", pileIdx, cardIdx)

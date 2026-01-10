@@ -88,7 +88,7 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtla
 		},
 	}
 	drawOpts.GeoM.Translate(float64(x+theme.Layout.CardWidth/2), float64(y+theme.Layout.CardHeight/2))
-	drawOpts.ColorScale.ScaleWithColor(theme.Colors.CardTextColor)
+	drawOpts.ColorScale.ScaleWithColor(theme.Colors.CardText)
 
 	text.Draw(screen, cardText, uiTextFace, drawOpts)
 }
