@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"image/color"
-	"os"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/staylor11x/spider-solitaire/internal/assets"
@@ -12,36 +9,13 @@ import (
 	"github.com/staylor11x/spider-solitaire/internal/logger"
 )
 
-const (
-	CardWidth     = 80
-	CardHeight    = 120
-	PileSpacing   = 100
-	CardStackGap  = 30
-	TableauStartX = 50
-	TableauStartY = 150
-	StatsX        = 20
-	StatsY        = 20
-	LogicalWidth  = 1280
-	LogicalHeight = 720
-
-	errorDisplayDuration = 180
-)
-
-var (
-	CardFaceUpColor     = color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	CardFaceDownColor   = color.RGBA{R: 50, G: 50, B: 150, A: 255}
-	TextColor           = color.RGBA{R: 0, G: 0, B: 0, A: 255}
-	SelectionOverlayCol = color.RGBA{R: 255, G: 215, B: 0, A: 90}
-)
-
-var debugOverlay = os.Getenv("SPIDER_FORCE_OVERLAY")
-
 // Game implements the ebiten.Game interface for Spider Solitaire
 type Game struct {
 	state     *game.GameState  // Engine state, mutated only in Update
 	view      game.GameViewDTO // Read-only snapshot for rendering
 	atlas     *CardAtlas       // The cards
 	suitCount deck.SuitCount   // Store the difficulty
+	theme     *Theme
 
 	lastErr   string // Ephemeral error text
 	errFrames int    // Frames left to display lastErr
@@ -50,6 +24,7 @@ type Game struct {
 	selecting     bool
 	selectedPile  int
 	selectedIndex int
+	showHelp      bool
 }
 
 // NewGame create a new Ebiten game instance
@@ -72,6 +47,8 @@ func NewGame(suitCount deck.SuitCount) *Game {
 		view:      view,
 		atlas:     atlas,
 		suitCount: suitCount,
+		theme:     &DefaultTheme,
+		showHelp:  false,
 	}
 }
 
@@ -110,6 +87,11 @@ func (g *Game) handleKeyboard() {
 			g.clearSelection()
 			logger.Info("Reset: success (stock=%d, completed=%d)", g.view.StockCount, g.view.CompletedCount)
 		}
+	}
+
+	// H = toggle help
+	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
+		g.showHelp = !g.showHelp
 	}
 }
 
@@ -164,15 +146,15 @@ func (g *Game) logicalCursor() (lx, ly int) {
 // hitTest finds the top-most card under the cursor, returning pile and card indices
 func (g *Game) hitTest(mx, my int) (pileIdx, cardIdx int, ok bool) {
 	for i, pile := range g.view.Tableau {
-		x := TableauStartX + i*PileSpacing
+		x := g.theme.Layout.TableauStartX + i*g.theme.Layout.PileSpacing
 		// quick horizontal reject
-		if mx < x || mx >= x+CardWidth {
+		if mx < x || mx >= x+g.theme.Layout.CardWidth {
 			continue
 		}
-		y := TableauStartY
+		y := g.theme.Layout.TableauStartY
 		// If the pile is empty, treat clicks within the column's base area as valid
 		if len(pile.Cards) == 0 {
-			if my >= y && my < y+CardHeight {
+			if my >= y && my < y+g.theme.Layout.CardHeight {
 				return i, 0, true
 			}
 			// no cards and click outside base area: continue searching
@@ -180,15 +162,15 @@ func (g *Game) hitTest(mx, my int) (pileIdx, cardIdx int, ok bool) {
 		}
 		// Cards overlap; check top-most first
 		for j := len(pile.Cards) - 1; j >= 0; j-- {
-			cy := y + j*CardStackGap
-			if mx >= x && mx < x+CardWidth && my >= cy && my < cy+CardHeight {
+			cy := y + j*g.theme.Layout.CardStackGap
+			if mx >= x && mx < x+g.theme.Layout.CardWidth && my >= cy && my < cy+g.theme.Layout.CardHeight {
 				return i, j, true
 			}
 		}
 		// if clicking below all cards but within column, treat as click on topmost card area
 		if len(pile.Cards) > 0 {
-			topY := y + (len(pile.Cards)-1)*CardStackGap
-			if mx >= x && mx < x+CardWidth && my >= topY+CardHeight {
+			topY := y + (len(pile.Cards)-1)*g.theme.Layout.CardStackGap
+			if mx >= x && mx < x+g.theme.Layout.CardWidth && my >= topY+g.theme.Layout.CardHeight {
 				return i, len(pile.Cards) - 1, true
 			}
 		}
@@ -209,7 +191,7 @@ func (g *Game) tickError() {
 
 func (g *Game) setError(msg string) {
 	g.lastErr = msg
-	g.errFrames = errorDisplayDuration
+	g.errFrames = g.theme.Layout.ErrorDisplayDuration
 	logger.Warn("Error: %s", msg)
 }
 
@@ -221,34 +203,34 @@ func (g *Game) clearSelection() {
 
 // Draw renders the current frame to the screen
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{R: 0, G: 100, B: 0, A: 255})
-
-	drawTableau(screen, g.view, g.atlas)
+	screen.Fill(g.theme.Colors.Background)
+	drawTableau(screen, g.view, g.atlas, g.theme)
 
 	if g.selecting {
-		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, SelectionOverlayCol)
+		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, g.theme)
 	}
 
-	drawStats(screen, g.view)
+	drawStats(screen, g.view, g.theme)
+
 	if g.lastErr != "" && g.errFrames > 0 {
-		drawError(screen, g.lastErr)
+		drawError(screen, g.lastErr, g.theme)
 	}
 
 	if g.view.Won {
-		drawWinLossOverlay(screen, "You Win!")
+		drawWinLossOverlay(screen, "You Win!", g.theme)
 	} else if g.view.Lost {
-		drawWinLossOverlay(screen, "Game Over :(")
-	} else if debugOverlay == "win" {
-		// debug overlay for testing
-		drawWinLossOverlay(screen, "You Win!")
-	} else if debugOverlay == "loss" {
-		drawWinLossOverlay(screen, "Game Over :'(")
+		drawWinLossOverlay(screen, "Game Over :(", g.theme)
 	}
+
+	if g.showHelp {
+		drawHelpOverlay(screen, g.theme)
+	}
+
 }
 
 // Layout returns the logical screen dimensions (fixed).
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return LogicalWidth, LogicalHeight
+	return g.theme.Layout.LogicalWidth, g.theme.Layout.LogicalHeight
 }
 
 // performMove executes the engine move via MoveSequence

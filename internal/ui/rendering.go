@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -16,30 +15,30 @@ import (
 var uiTextFace = text.NewGoXFace(basicfont.Face7x13)
 
 // drawTableau renders all 10 piles from the view snapshot
-func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas) {
+func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme) {
 	for i, pile := range view.Tableau {
-		x := TableauStartX + i*PileSpacing
-		y := TableauStartY
-		drawPile(screen, pile, x, y, atlas)
+		x := theme.Layout.TableauStartX + i*theme.Layout.PileSpacing
+		y := theme.Layout.TableauStartY
+		drawPile(screen, pile, x, y, atlas, theme)
 	}
 }
 
 // drawPile renders a single pile at the given position
-func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas) {
+func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas, theme *Theme) {
 	// If the pile is empty, render a faint placeholder to indicate a valid drop target
 	if len(pile.Cards) == 0 {
-		drawEmptyPilePlaceholder(screen, x, y)
+		drawEmptyPilePlaceholder(screen, x, y, theme)
 		return
 	}
 	for i, card := range pile.Cards {
 		// stack the cards vertically with a small gap
-		cardY := y + i*CardStackGap
-		drawCard(screen, card, x, cardY, atlas)
+		cardY := y + i*theme.Layout.CardStackGap
+		drawCard(screen, card, x, cardY, atlas, theme)
 	}
 }
 
 // drawCard renders a single card at the given position
-func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtlas) {
+func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtlas, theme *Theme) {
 
 	if atlas != nil {
 		var img *ebiten.Image
@@ -55,8 +54,8 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtla
 			h := img.Bounds().Dy()
 			opts := &ebiten.DrawImageOptions{}
 			// Scale to logical card size if asset size differs
-			sx := float64(CardWidth) / float64(w)
-			sy := float64(CardHeight) / float64(h)
+			sx := float64(theme.Layout.CardWidth) / float64(w)
+			sy := float64(theme.Layout.CardHeight) / float64(h)
 			opts.GeoM.Scale(sx, sy)
 			opts.GeoM.Translate(float64(x), float64(y))
 			screen.DrawImage(img, opts)
@@ -65,13 +64,13 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtla
 	}
 
 	// Fallback: vector rect + text
-	bgColor := CardFaceUpColor
+	bgColor := theme.Colors.CardFaceUp
 	if !card.FaceUp {
-		bgColor = CardFaceDownColor
+		bgColor = theme.Colors.CardFaceDown
 	}
 
 	// card rectangle
-	vector.FillRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), bgColor, false)
+	vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), bgColor, false)
 
 	// card text
 	var cardText string
@@ -88,8 +87,8 @@ func drawCard(screen *ebiten.Image, card game.CardDTO, x, y int, atlas *CardAtla
 			SecondaryAlign: text.AlignCenter,
 		},
 	}
-	drawOpts.GeoM.Translate(float64(x+CardWidth/2), float64(y+CardHeight/2))
-	drawOpts.ColorScale.ScaleWithColor(TextColor)
+	drawOpts.GeoM.Translate(float64(x+theme.Layout.CardWidth/2), float64(y+theme.Layout.CardHeight/2))
+	drawOpts.ColorScale.ScaleWithColor(theme.Colors.CardTextColor)
 
 	text.Draw(screen, cardText, uiTextFace, drawOpts)
 }
@@ -101,19 +100,19 @@ func formatCard(card game.CardDTO) string {
 }
 
 // drawStats renders stock and completed counts at the top-left
-func drawStats(screen *ebiten.Image, view game.GameViewDTO) {
+func drawStats(screen *ebiten.Image, view game.GameViewDTO, theme *Theme) {
 	stats := fmt.Sprintf("Stock: %d | Completed: %d | Won: %v | Lost: %v",
 		view.StockCount, view.CompletedCount, view.Won, view.Lost)
 
 	drawOpts := &text.DrawOptions{}
-	drawOpts.GeoM.Translate(float64(StatsX), float64(StatsY))
-	drawOpts.ColorScale.ScaleWithColor(color.White)
+	drawOpts.GeoM.Translate(float64(theme.Layout.StatsX), float64(theme.Layout.StatsY))
+	drawOpts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
 
 	text.Draw(screen, stats, uiTextFace, drawOpts)
 }
 
 // drawError shows an ephemeral error message at the top-right (centered in pill)
-func drawError(screen *ebiten.Image, msg string) {
+func drawError(screen *ebiten.Image, msg string, theme *Theme) {
 
 	// near top right
 	const margin = 20
@@ -122,10 +121,10 @@ func drawError(screen *ebiten.Image, msg string) {
 	// background pill
 	bgW, bgH := 380, 24
 	bgX := float32(w - margin - bgW)
-	bgY := float32(StatsY)
+	bgY := float32(theme.Layout.StatsY)
 
 	// Semi-transparent background
-	vector.FillRect(screen, bgX, bgY, float32(bgW), float32(bgH), color.RGBA{0, 0, 0, 160}, false)
+	vector.FillRect(screen, bgX, bgY, float32(bgW), float32(bgH), theme.Colors.ErrorPillBG, false)
 
 	// center the text within the pill
 	opts := &text.DrawOptions{
@@ -136,13 +135,13 @@ func drawError(screen *ebiten.Image, msg string) {
 	}
 	// translate to the pills center
 	opts.GeoM.Translate(float64(bgX)+float64(bgW)/2, float64(bgY)+float64(bgH)/2)
-	opts.ColorScale.ScaleWithColor(color.White)
+	opts.ColorScale.ScaleWithColor(theme.Colors.ErrorPillText)
 
 	text.Draw(screen, msg, uiTextFace, opts)
 }
 
 // drawSelectionOverlay highlights the selected suffix (from selectedIndex to top) on a pile.
-func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, col color.RGBA) {
+func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, theme *Theme) {
 	if pileIdx < 0 || pileIdx >= len(view.Tableau) {
 		return
 	}
@@ -150,33 +149,33 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 	if selectedIndex < 0 || selectedIndex >= len(pile.Cards) {
 		return
 	}
-	x := TableauStartX + pileIdx*PileSpacing
-	y := TableauStartY
+	x := theme.Layout.TableauStartX + pileIdx*theme.Layout.PileSpacing
+	y := theme.Layout.TableauStartY
 
 	for i := selectedIndex; i < len(pile.Cards); i++ {
-		cy := y + i*CardStackGap
-		vector.FillRect(screen, float32(x), float32(cy), float32(CardWidth), float32(CardHeight), col, false)
+		cy := y + i*theme.Layout.CardStackGap
+		vector.FillRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.SelectionOverlay, false)
 	}
 }
 
-func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int) {
+func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int, theme *Theme) {
 	const borderWidth = 2
 	// Faint fill and border for visibility on table felt
-	fill := color.RGBA{R: 0, G: 0, B: 0, A: 30}
-	border := color.RGBA{R: 255, G: 255, B: 255, A: 90}
+	fill := theme.Colors.PlaceholderFill
+	border := theme.Colors.PlaceholderStroke
 
-	vector.FillRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), fill, false)
-	vector.StrokeRect(screen, float32(x), float32(y), float32(CardWidth), float32(CardHeight), borderWidth, border, false)
+	vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), fill, false)
+	vector.StrokeRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), borderWidth, border, false)
 
 }
 
 // drawWinLossOverlay darkens the background and renders a centered message
-func drawWinLossOverlay(screen *ebiten.Image, msg string) {
+func drawWinLossOverlay(screen *ebiten.Image, msg string, theme *Theme) {
 	b := screen.Bounds()
 	w, h := b.Dx(), b.Dy()
 
 	// Dim the whole screen for contrast
-	vector.FillRect(screen, 0, 0, float32(w), float32(h), color.RGBA{0, 0, 0, 160}, false)
+	vector.FillRect(screen, 0, 0, float32(w), float32(h), theme.Colors.HelpOverlayBG, false)
 
 	// center the text
 	opts := &text.DrawOptions{
@@ -186,7 +185,23 @@ func drawWinLossOverlay(screen *ebiten.Image, msg string) {
 		},
 	}
 	opts.GeoM.Translate(float64(w)/2, float64(h)/2)
-	opts.ColorScale.ScaleWithColor(color.RGBA{255, 255, 255, 255})
+	opts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
 
 	text.Draw(screen, msg, uiTextFace, opts)
+}
+
+func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
+	b := screen.Bounds()
+	w, h := b.Dx(), b.Dy()
+
+	vector.FillRect(screen, 0, 0, float32(w), float32(h), theme.Colors.HelpOverlayBG, false)
+
+	helpText := "Controls: \n\n[D] - Deal Row \n[R] - Reset Game\n[H] - Toggle Help"
+
+	opts := &text.DrawOptions{
+		LayoutOptions: text.LayoutOptions{PrimaryAlign: text.AlignCenter, SecondaryAlign: text.AlignCenter},
+	}
+	opts.GeoM.Translate(float64(w)/2, float64(h)/2)
+	opts.ColorScale.ScaleWithColor(theme.Colors.HelpOverlayText)
+	text.Draw(screen, helpText, uiTextFace, opts)
 }
