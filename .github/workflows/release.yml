@@ -1,5 +1,9 @@
 name: Release Branch Tagging
 
+permissions:
+    contents: write
+    actions: read
+
 on:
   push:
     branches:
