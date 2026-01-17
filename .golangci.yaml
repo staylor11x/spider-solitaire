@@ -1,21 +1,42 @@
+version: "2"
 run:
- timeout: 2m
- tests: true
+  tests: true
 linters:
   enable:
-  - govet
-  - staticcheck
-  - errcheck
-  - gosimple
-  - unused
-  - ineddassign
-  - gofmt
-  - revive
-  - gocitric
+    - misspell
+    - revive
   settings:
-    importas:
-      alias:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    revive:
+      confidence: 0.8
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+          - unused
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-use-defaults: false
   max-issues-per-linter: 0
   max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
