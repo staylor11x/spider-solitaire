@@ -1,0 +1,143 @@
+name: Release Branch Tagging
+
+on:
+  push:
+    branches:
+      - 'release/v*'
+jobs:
+  validate-and-tag:
+    name: Validate Version and Create Tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from branch name
+        id: extract_version
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "Branch name: $BRANCH_NAME"
+
+          # Extract version using regex (release/v1.3.0 -> v1.3.0)
+          if [[ $BRANCH_NAME =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+(-[a-ZA-Z0-9]+)?$ ]]; then
+            VERSION="v${BASH_REMATCH[1]}"
+            echo "Extracted version: "$VERSION"
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "Invalid branch name format. Expected: release/vX.Y.Z or release/vX.Y.Z-suffix"
+            echo "Examples: release/v1.3.0, release/v2.0.0-beta"
+            exit 1
+          fi
+
+      - name: Validate version format #TODO is this required, we are already checking branch name in step 1
+        id: validate_format
+        run: |
+          VERSION="${{ steps.extract_version.outputs.VERSION }}"
+
+          # Check if version matches semantic versioning
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-ZA-Z0-9]+)?$ ]]; then
+            echo " Version must follow semantic versioning: vX.Y.Z or vX.Y.Z-suffix"
+            exit 1
+          fi
+
+          # Extract parts (v1.3.0-beta -> MAJOR=1, MINOR=3, PATCH=0, SUFFIX=-beta)
+          VERSION_WITHOUT_V="${VERSION#v}"
+          BASE_VERSION="${VERSION_WITHOUT_V%%-*}"
+          MAJOR=$(echo $BASE_VERSION | cut -d. -f1)
+          MINOR=$(echo $BASE_VERSION | cut -d, -f2)
+          PATCH=$(echo $BASE_VERSION | cut -d, -f3)
+
+          echo "Version parts: MAJOR=$MAJOR MINOR=$MINOR PATCH=$PATCH"
+          echo "MAJOR=$MAJOR >> $GITHUB_OUTPUT
+          echo "MINOR=$MINOR >> $GITHUB_OUTPUT
+          echo "PATCH=$PATCH >> $GITHUB_OUTPUT
+
+          # Check if it's a hotfix (non-.0 patch version
+          if [ "$PATCH" != "0"; then
+            echo "Hotfix release detected (patch version: $PATCH)"
+            echo "IS_HOTFIX=true" >> $GITHUB_OUTPUT
+          else
+            echo "Standard release (minor/major bump)"
+            echo "IS_HOTFIX=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Get latest tag
+        id: get_latest_tag
+        run: |
+          # Get the latest tag matching semantic versioning
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" 2>/dev/null || echo "v0.0.0")
+          echo "Latest existing tag: $LATEST_TAG"
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        run: |
+          NEW_VERSION="${{ steps.extract_version.outputs.VERSION }}"
+          LATEST_TAG="${{ steps.get_latest_tag.outputs.LATEST_TAG }}"
+          LATEST_BASE="${LATEST_TAG#v}"
+          LATEST_BASE="${LATEST_BASE%%-v*}"
+
+          # Function to compare semantic versions
+          version_gt() {
+            test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
+          }
+
+          if version_gt "$NEW_BASE" "$LATEST_BASE"; then
+            echo "Version $NEW_VERSION is greater than $LATEST_TAG"
+          else
+            echo "Version $NEW_VERSION must be greater than current latest tag $LATEST_TAG"
+            exit 1
+          fi
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          VERSION="${{ steps.extract_version.outputs.VERSION }}"
+
+          if git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null 2>&1; then
+            echo "TAg $VERSION already exists!"
+            exit 1
+          else 
+            echo "Tag $VERSION does not exist. Proceeding to create it."
+          fi
+
+      - name: Create and push tag
+        run: | 
+          VERSION="${{ steps.extract_version.outputs.VERSION }}"
+          IS_HOTFIX="${{ steps.validate_format.outputs.IS_HOTFIX }}"
+
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot"
+
+          # Create tag with appropriate message
+          if [ "$IS_HOTFIX" = "true" ]; then
+            git tag -a "$VERSION -m "Hotfix release $VERSION"
+            echo "Created hotfix tag: $VERSION"
+          else
+            git tag -a "$VERSION" -m "Release $VERSION"
+            echo "Created release tag: $VERSION"
+          fi
+
+          git push origin "%VERSION"
+          echo "Tag $VERSION pushed successfully"
+
+      - name: Summary
+        if: success()
+        run: |
+          VERSION="${{ steps.extract_version.outputs.VERSION }}"
+          IS_HOTFIX="${{ steps.validate_format.outputs.IS_HOTFIX }}"
+
+          echo " ### Release Tag Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`$Version\`" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$IS_HOTFIX" = "true" ]; then
+            echo "**Type:** Hotfix Release " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Type:** Standard Release " >> "$GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${GITHUB_REF#ref/heads/}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Previous Tag:** \`${{ steps.get_latest_tag.outputs.LATEST_TAG }}\`" >> $GITHUB_STEP_SUMMARY 
