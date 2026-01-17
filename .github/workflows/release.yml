@@ -20,11 +20,11 @@ jobs:
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           echo "Branch name: $BRANCH_NAME"
-
+          
           # Extract version using regex (release/v1.3.0 -> v1.3.0)
-          if [[ $BRANCH_NAME =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+(-[a-ZA-Z0-9]+)?$ ]]; then
+          if [[ $BRANCH_NAME =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?)$ ]]; then
             VERSION="v${BASH_REMATCH[1]}"
-            echo "Extracted version: "$VERSION"
+            echo "Extracted version: $VERSION"
             echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           else
             echo "Invalid branch name format. Expected: release/vX.Y.Z or release/vX.Y.Z-suffix"
@@ -32,14 +32,14 @@ jobs:
             exit 1
           fi
 
-      - name: Validate version format #TODO is this required, we are already checking branch name in step 1
+      - name: Validate version format
         id: validate_format
         run: |
           VERSION="${{ steps.extract_version.outputs.VERSION }}"
-
+          
           # Check if version matches semantic versioning
-          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-ZA-Z0-9]+)?$ ]]; then
-            echo " Version must follow semantic versioning: vX.Y.Z or vX.Y.Z-suffix"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "Version must follow semantic versioning: vX.Y.Z or vX.Y.Z-suffix"
             exit 1
           fi
 
@@ -47,22 +47,23 @@ jobs:
           VERSION_WITHOUT_V="${VERSION#v}"
           BASE_VERSION="${VERSION_WITHOUT_V%%-*}"
           MAJOR=$(echo $BASE_VERSION | cut -d. -f1)
-          MINOR=$(echo $BASE_VERSION | cut -d, -f2)
-          PATCH=$(echo $BASE_VERSION | cut -d, -f3)
-
+          MINOR=$(echo $BASE_VERSION | cut -d. -f2)
+          PATCH=$(echo $BASE_VERSION | cut -d. -f3)
+          
           echo "Version parts: MAJOR=$MAJOR MINOR=$MINOR PATCH=$PATCH"
-          echo "MAJOR=$MAJOR >> $GITHUB_OUTPUT
-          echo "MINOR=$MINOR >> $GITHUB_OUTPUT
-          echo "PATCH=$PATCH >> $GITHUB_OUTPUT
-
-          # Check if it's a hotfix (non-.0 patch version
-          if [ "$PATCH" != "0"; then
+          echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
+          echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
+          echo "PATCH=$PATCH" >> $GITHUB_OUTPUT
+          
+          # Check if it's a hotfix (non-.0 patch version)
+          if [ "$PATCH" != "0" ]; then
             echo "Hotfix release detected (patch version: $PATCH)"
             echo "IS_HOTFIX=true" >> $GITHUB_OUTPUT
           else
             echo "Standard release (minor/major bump)"
             echo "IS_HOTFIX=false" >> $GITHUB_OUTPUT
           fi
+
       - name: Get latest tag
         id: get_latest_tag
         run: |
@@ -75,14 +76,18 @@ jobs:
         run: |
           NEW_VERSION="${{ steps.extract_version.outputs.VERSION }}"
           LATEST_TAG="${{ steps.get_latest_tag.outputs.LATEST_TAG }}"
+          
+          # Strip 'v' prefix and any suffix for comparison
+          NEW_BASE="${NEW_VERSION#v}"
+          NEW_BASE="${NEW_BASE%%-*}"
           LATEST_BASE="${LATEST_TAG#v}"
-          LATEST_BASE="${LATEST_BASE%%-v*}"
-
+          LATEST_BASE="${LATEST_BASE%%-*}"
+          
           # Function to compare semantic versions
           version_gt() {
             test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
           }
-
+          
           if version_gt "$NEW_BASE" "$LATEST_BASE"; then
             echo "Version $NEW_VERSION is greater than $LATEST_TAG"
           else
@@ -94,50 +99,50 @@ jobs:
         id: check_tag
         run: |
           VERSION="${{ steps.extract_version.outputs.VERSION }}"
-
-          if git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null 2>&1; then
-            echo "TAg $VERSION already exists!"
+          
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists!"
             exit 1
-          else 
+          else
             echo "Tag $VERSION does not exist. Proceeding to create it."
           fi
 
       - name: Create and push tag
-        run: | 
+        run: |
           VERSION="${{ steps.extract_version.outputs.VERSION }}"
           IS_HOTFIX="${{ steps.validate_format.outputs.IS_HOTFIX }}"
-
+          
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot"
-
+          git config --global user.name "github-actions[bot]"
+          
           # Create tag with appropriate message
           if [ "$IS_HOTFIX" = "true" ]; then
-            git tag -a "$VERSION -m "Hotfix release $VERSION"
+            git tag -a "$VERSION" -m "Hotfix release $VERSION"
             echo "Created hotfix tag: $VERSION"
           else
             git tag -a "$VERSION" -m "Release $VERSION"
             echo "Created release tag: $VERSION"
           fi
-
-          git push origin "%VERSION"
-          echo "Tag $VERSION pushed successfully"
+          
+          git push origin "$VERSION"
+          echo "Tag $VERSION pushed successfully!"
 
       - name: Summary
         if: success()
         run: |
           VERSION="${{ steps.extract_version.outputs.VERSION }}"
           IS_HOTFIX="${{ steps.validate_format.outputs.IS_HOTFIX }}"
-
-          echo " ### Release Tag Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Release Tag Created Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** \`$Version\`" >> $GITHUB_STEP_SUMMARY
-
+          echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          
           if [ "$IS_HOTFIX" = "true" ]; then
-            echo "**Type:** Hotfix Release " >> $GITHUB_STEP_SUMMARY
+            echo "**Type:** Hotfix Release 🔧" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Type:** Standard Release " >> "$GITHUB_STEP_SUMMARY
+            echo "**Type:** Standard Release 📦" >> $GITHUB_STEP_SUMMARY
           fi
-
+          
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** \`${GITHUB_REF#ref/heads/}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Previous Tag:** \`${{ steps.get_latest_tag.outputs.LATEST_TAG }}\`" >> $GITHUB_STEP_SUMMARY 
+          echo "**Branch:** \`${GITHUB_REF#refs/heads/}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Previous Tag:** \`${{ steps.get_latest_tag.outputs.LATEST_TAG }}\`" >> $GITHUB_STEP_SUMMARY
