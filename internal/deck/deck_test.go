@@ -27,7 +27,7 @@ func TestNewMultiDeck(t *testing.T) {
 		d := NewMultiDeck(2)
 		assert.Equal(t, 104, d.Size(), "two decks should have 104 cards")
 
-		// count occurences of each card
+		// count occurrences of each card
 		counts := make(map[string]int)
 		for _, c := range d.Cards() {
 			counts[c.String()]++
