@@ -46,7 +46,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
-          args: --config.golangci.yaml --timeout=5m
+          args: --config=.golangci.yaml --timeout=5m
   build:
     name: Build Verification
     runs-on: ubuntu-latest
