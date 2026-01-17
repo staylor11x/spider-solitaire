@@ -31,7 +31,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: make test
+        run: xvfb-run -a make test      # allows tests to run with a fake monitor, even tho we don't have any UI tests
 
   lint:
     name: Run Linter
