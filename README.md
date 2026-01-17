@@ -83,3 +83,11 @@ Tests focus on behavior, not implementation details
   - CardDTO, PileDTO, GameViewDTO
 - UI consumes read-only snapshots
 - No UI code depends on engine internals
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development workflow
+- Branching and versioning strategy
+- How to create releases
+- Testing and code quality guidelines
