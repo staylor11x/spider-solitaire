@@ -63,6 +63,7 @@ jobs:
           sudo apt-get install -y libgl1-mesa-dev xorg-dev libasound2-dev
 
       - name: Build binary
+        shell: bash
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
