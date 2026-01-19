@@ -91,3 +91,5 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - Branching and versioning strategy
 - How to create releases
 - Testing and code quality guidelines
+
+## More Info
