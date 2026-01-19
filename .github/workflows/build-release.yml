@@ -1,4 +1,4 @@
-name: Build Release BInaries
+name: Build Release Binaries 
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5 # update version
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -45,17 +45,17 @@ jobs:
         if: matrix.goos == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev libsound2-dev
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev libasound2-dev
 
       - name: Get version and build time
         id: version
         shell: bash
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
-          BUILD_TIME=$(date -u + "%Y-%m-$dT%H:%M:%SZ")
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_TIME=$BUILD_TIME" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION a t$BUILD_TIME
+          echo "Building version: $VERSION at $BUILD_TIME"  
         
       - name: Build binary
         env:
@@ -63,18 +63,19 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           go build -v \
-            -ldflags="-s -w -x main.Version=${{ steps.version.outputs.VERSION }} -x main.BuildTime=${{ steps.version.outputs.BUILD_TIME }}" -o ${{ matrix.binary_name }} ./cmd/game
+            -ldflags="-s -w -X main.Version=${{ steps.version.outputs.VERSION }} -X main.BuildTime=${{ steps.version.outputs.BUILD_TIME }}" \
+            -o ${{ matrix.binary_name }} \
+            ./cmd/game
 
       - name: Create artifact name
         id: artifact
         shell: bash
         run: |
-          VERSION="{{ steps.version.outputs.VERSION }}"
+          VERSION="${{ steps.version.outputs.VERSION }}"
           ARTIFACT_NAME="spider-solitaire-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
 
           # add .exe extension for Windows
-          if [ "${{matrix.goos }}" = "windows" ]; then
-            ARTIFACT_NAME="${ARTIFACT_NAME}.exe"
+          if [ "${{ matrix.goos }}" = "windows" ]; then  
           fi
 
           echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
@@ -83,10 +84,10 @@ jobs:
       - name: Rename binary for upload
         shell: bash
         run: |
-          mv ${{matrix.binary_name }} ${{ steps.artifact.outputs.ARTIFACT_NAME }}
+          mv ${{ matrix.binary_name }} ${{ steps.artifact.outputs.ARTIFACT_NAME }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4  # update version
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
           path: ${{ steps.artifact.outputs.ARTIFACT_NAME }}
@@ -96,22 +97,21 @@ jobs:
       - name: Build summary
         shell: bash
         run: |
-          echo "### Build Successful" >> %GITHUB_STEP_SUMMARY
+          echo "### ✅ Build Successful!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platform:** ${{ matrix.goos }}-${{ matrix.goarch }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ steps.version.outputs.VERISON }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Time:** ${{steps.version.outputs.BUILD_TIME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY 
+          echo "**Build Time:** ${{ steps.version.outputs.BUILD_TIME }}" >> $GITHUB_STEP_SUMMARY
           echo "**Artifact:** \`${{ steps.artifact.outputs.ARTIFACT_NAME }}\`" >> $GITHUB_STEP_SUMMARY
           
           # show file size
-          if [ "${{ matrix.goos }}" = "windows"]; then
+          if [ "${{ matrix.goos }}" = "windows" ]; then
             SIZE=$(stat -c%s "${{ steps.artifact.outputs.ARTIFACT_NAME }}" 2>/dev/null || stat -f%z "${{ steps.artifact.outputs.ARTIFACT_NAME }}" 2>/dev/null || echo "unknown")
           else
-            SIZE=$(stat -c%s "${{ steps.artifact.outputs.ARTIFACTORY_NAME }}" 2>//dev/null || echo "unknown")
+            SIZE=$(stat -c%s "${{ steps.artifact.outputs.ARTIFACT_NAME }}" 2>/dev/null || echo "unknown")  
           fi
             
-          if ["SIZE" != "unknown"]; then
+          if [ "$SIZE" != "unknown" ]; then
             SIZE_MB=$((SIZE / 1024 / 1024))
-            echo "**Size:** $(SIZE_MD) MD" >> $GITHUB_STEP_SUMMARY
+            echo "**Size:** ${SIZE_MB} MB" >> $GITHUB_STEP_SUMMARY 
           fi
-          
