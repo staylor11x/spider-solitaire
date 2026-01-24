@@ -122,3 +122,45 @@ jobs:
             SIZE_MB=$((SIZE / 1024 / 1024))
             echo "**Size:** ${SIZE_MB} MB" >> $GITHUB_STEP_SUMMARY 
           fi
+
+  generate-checksums:
+    name: Generate SHA256 Checksums
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List downloaded files
+        run: |
+          echo "Downloaded artifacts:"
+          ls -lah artifacts/
+
+      - name: Generate checksums
+        working-directory: artifacts
+        run: |
+          echo "Generating SHA256 checksums..."
+          sha256sum * > ../checksums.txt
+          
+          echo "Checksums generated:"
+          cat ../checksums.txt
+
+      - name: Display checksums in summary
+        run: |
+          echo "### SHA256 Checksums Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat checksums.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload checksums file
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksums.txt
+          path: checksums.txt
+          retention-days: 90
+          if-no-files-found: error
