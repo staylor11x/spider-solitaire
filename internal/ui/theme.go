@@ -66,7 +66,7 @@ var DefaultTheme = Theme{
 		ErrorPillText:     color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		HelpOverlayBG:     color.RGBA{R: 0, G: 0, B: 0, A: 200},
 		HelpOverlayText:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		PlaceholderBG:     color.RGBA{R: 255, G: 255, B: 255, A: 20},
+		PlaceholderBG:     color.RGBA{R: 0, G: 100, B: 0, A: 255},
 		PlaceholderBorder: color.RGBA{R: 255, G: 255, B: 255, A: 50},
 	},
 	Font: text.NewGoXFace(basicfont.Face7x13),
