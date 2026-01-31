@@ -74,6 +74,20 @@ func (g *Game) handleKeyboard() {
 		}
 	}
 
+	// U = undo last move
+	if inpututil.IsKeyJustPressed(ebiten.KeyU) {
+		logger.Debug("Undo: requested")
+		err := g.state.Undo()
+		if err != nil {
+			g.setError("No moved to undo")
+			logger.Warn("Undo: no history available")
+		} else {
+			g.view = g.state.View()
+			g.selecting = false
+			logger.Info("Undo: reverted to previous state")
+		}
+	}
+
 	// R = reset game
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		logger.Debug("Reset: requested")
