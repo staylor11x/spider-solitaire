@@ -19,6 +19,9 @@ type Layout struct {
 	LogicalWidth         int
 	LogicalHeight        int
 	ErrorDisplayDuration int
+	SelectionLiftPx      int
+	SelectionBorderPx    int
+	PlaceholderBorderPx  int
 }
 
 type Colors struct {
@@ -57,6 +60,9 @@ var DefaultTheme = Theme{
 		LogicalWidth:         1280,
 		LogicalHeight:        720,
 		ErrorDisplayDuration: 180, // 3 seconds at 60 FPS
+		SelectionLiftPx:      5,
+		SelectionBorderPx:    2,
+		PlaceholderBorderPx:  2,
 	},
 	Colors: Colors{
 		Background:        color.RGBA{R: 0, G: 100, B: 0, A: 255},

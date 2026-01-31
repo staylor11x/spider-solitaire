@@ -180,28 +180,25 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 	}
 	x := theme.Layout.TableauStartX + pileIdx*theme.Layout.PileSpacing
 	y := theme.Layout.TableauStartY
-	const liftOffset = 5  // pixels to lift selected cards upward
-	const borderWidth = 2 // pixel width of selection border
 
 	for i := selectedIndex; i < len(pile.Cards); i++ {
-		cy := y + i*theme.Layout.CardStackGap - liftOffset // lift by 8 pixels
+		cy := y + i*theme.Layout.CardStackGap - theme.Layout.SelectionLiftPx
 		// Redraw the card at the lifted position
 		drawCard(screen, pile.Cards[i], x, cy, atlas, theme)
 		// Gold tint overlay
 		vector.FillRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.SelectionOverlay, false)
 		// Goldenrod border for contrast
-		vector.StrokeRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), borderWidth, theme.Colors.SelectionBorder, false)
+		vector.StrokeRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), float32(theme.Layout.SelectionBorderPx), theme.Colors.SelectionBorder, false)
 	}
 }
 
 func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int, theme *Theme) {
-	const borderWidth = 2
 	// Faint fill and border for visibility on table felt
 	fill := theme.Colors.PlaceholderBG
 	border := theme.Colors.PlaceholderBorder
 
 	vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), fill, false)
-	vector.StrokeRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), borderWidth, border, false)
+	vector.StrokeRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), float32(theme.Layout.PlaceholderBorderPx), border, false)
 
 }
 
