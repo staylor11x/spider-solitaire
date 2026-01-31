@@ -25,6 +25,10 @@ type Game struct {
 	selectedPile  int
 	selectedIndex int
 	showHelp      bool
+
+	// Hover state for visual feedback
+	hoveredPile    int // -1 when no pile is hovered
+	hoveredCardIdx int // index of hovered card within pile, -1 when none
 }
 
 // NewGame create a new Ebiten game instance
@@ -43,12 +47,14 @@ func NewGame(suitCount deck.SuitCount) *Game {
 	logger.Info("NewGame: initial deal (stock=%d, completed=%d, won=%v, lost=%v)", view.StockCount, view.CompletedCount, view.Won, view.Lost)
 
 	return &Game{
-		state:     state,
-		view:      view,
-		atlas:     atlas,
-		suitCount: suitCount,
-		theme:     &DefaultTheme,
-		showHelp:  false,
+		state:          state,
+		view:           view,
+		atlas:          atlas,
+		suitCount:      suitCount,
+		theme:          &DefaultTheme,
+		showHelp:       false,
+		hoveredPile:    -1,
+		hoveredCardIdx: -1,
 	}
 }
 
@@ -56,8 +62,22 @@ func NewGame(suitCount deck.SuitCount) *Game {
 func (g *Game) Update() error {
 	g.handleKeyboard()
 	g.handleMouse()
+	g.updateHover()
 	g.tickError()
 	return nil
+}
+
+// updateHover tracks which pile and card (if any) are under the cursor
+func (g *Game) updateHover() {
+	mx, my := g.logicalCursor()
+	pileIdx, cardIdx, ok := g.hitTest(mx, my)
+	if ok {
+		g.hoveredPile = pileIdx
+		g.hoveredCardIdx = cardIdx
+	} else {
+		g.hoveredPile = -1
+		g.hoveredCardIdx = -1
+	}
 }
 
 func (g *Game) handleKeyboard() {
@@ -240,10 +260,14 @@ func (g *Game) clearSelection() {
 // Draw renders the current frame to the screen
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(g.theme.Colors.Background)
-	drawTableau(screen, g.view, g.atlas, g.theme)
+	selectedPile, selectedIndex := -1, -1
+	if g.selecting {
+		selectedPile, selectedIndex = g.selectedPile, g.selectedIndex
+	}
+	drawTableau(screen, g.view, g.atlas, g.theme, selectedPile, selectedIndex, g.hoveredPile, g.hoveredCardIdx)
 
 	if g.selecting {
-		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, g.theme)
+		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, g.atlas, g.theme)
 	}
 
 	drawStats(screen, g.view, g.theme)

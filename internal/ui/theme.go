@@ -19,6 +19,9 @@ type Layout struct {
 	LogicalWidth         int
 	LogicalHeight        int
 	ErrorDisplayDuration int
+	SelectionLiftPx      int
+	SelectionBorderPx    int
+	PlaceholderBorderPx  int
 }
 
 type Colors struct {
@@ -27,6 +30,8 @@ type Colors struct {
 	CardFaceDown      color.RGBA
 	CardText          color.RGBA
 	SelectionOverlay  color.RGBA
+	SelectionBorder   color.RGBA
+	HoverOverlay      color.RGBA
 	ErrorPillBG       color.RGBA
 	ErrorPillText     color.RGBA
 	HelpOverlayBG     color.RGBA
@@ -55,15 +60,20 @@ var DefaultTheme = Theme{
 		LogicalWidth:         1280,
 		LogicalHeight:        720,
 		ErrorDisplayDuration: 180, // 3 seconds at 60 FPS
+		SelectionLiftPx:      5,
+		SelectionBorderPx:    2,
+		PlaceholderBorderPx:  2,
 	},
 	Colors: Colors{
 		Background:        color.RGBA{R: 0, G: 100, B: 0, A: 255},
 		CardFaceUp:        color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		CardFaceDown:      color.RGBA{R: 0, G: 0, B: 139, A: 255},
 		CardText:          color.RGBA{R: 0, G: 0, B: 0, A: 255},
-		SelectionOverlay:  color.RGBA{R: 255, G: 215, B: 0, A: 100},
-		ErrorPillBG:       color.RGBA{R: 200, G: 0, B: 0, A: 220},
-		ErrorPillText:     color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		SelectionOverlay:  color.RGBA{R: 0, G: 0, B: 0, A: 100},
+		SelectionBorder:   color.RGBA{R: 0, G: 0, B: 0, A: 255},
+		HoverOverlay:      color.RGBA{R: 0, G: 0, B: 0, A: 50},
+		ErrorPillBG:       color.RGBA{R: 80, G: 70, B: 90, A: 180},
+		ErrorPillText:     color.RGBA{R: 230, G: 230, B: 240, A: 255},
 		HelpOverlayBG:     color.RGBA{R: 0, G: 0, B: 0, A: 200},
 		HelpOverlayText:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		PlaceholderBG:     color.RGBA{R: 0, G: 100, B: 0, A: 255},
