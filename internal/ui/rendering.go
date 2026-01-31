@@ -11,25 +11,57 @@ import (
 )
 
 // drawTableau renders all 10 piles from the view snapshot
-func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme) {
+func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme, selectedPile, selectedIndex, hoveredPile, hoveredCardIdx int) {
+	// When a selection is active, suppress hover overlays to avoid visual noise
+	selectionActive := selectedPile >= 0 && selectedIndex >= 0
+
 	for i, pile := range view.Tableau {
 		x := theme.Layout.TableauStartX + i*theme.Layout.PileSpacing
 		y := theme.Layout.TableauStartY
-		drawPile(screen, pile, x, y, atlas, theme)
+		isSelected := (i == selectedPile) // is this pile the selected one?
+		isHovered := (i == hoveredPile)   // is this pile hovered?
+		hvdCardIdx := -1
+		if isHovered && !selectionActive {
+			hvdCardIdx = hoveredCardIdx
+		}
+		drawPile(screen, pile, x, y, atlas, theme, isSelected, selectedIndex, hvdCardIdx)
 	}
 }
 
 // drawPile renders a single pile at the given position
-func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas, theme *Theme) {
+// If isSelected is true, cards from selectedIndex onwards are skipped (they'll be drawn lifted in drawSelectionOverlay)
+// hoveredCardIdx is the index of the card being hovered (-1 for none), overlay is drawn on that card only
+func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas, theme *Theme, isSelected bool, selectedIndex int, hoveredCardIdx int) {
 	// If the pile is empty, render a faint placeholder to indicate a valid drop target
 	if len(pile.Cards) == 0 {
 		drawEmptyPilePlaceholder(screen, x, y, theme)
+		// Draw hover overlay on empty pile placeholder
+		if hoveredCardIdx >= 0 {
+			vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.HoverOverlay, false)
+		}
 		return
 	}
+
+	// Only show hover if the hovered card itself is face-up
+	// Don't highlight anything when hovering over face-down cards
+	showHover := false
+	if hoveredCardIdx >= 0 && hoveredCardIdx < len(pile.Cards) {
+		showHover = pile.Cards[hoveredCardIdx].FaceUp
+	}
+
 	for i, card := range pile.Cards {
+		// Skip cards that are part of a selection (they'll be drawn lifted by drawSelectionOverlay)
+		if isSelected && i >= selectedIndex {
+			continue
+		}
 		// stack the cards vertically with a small gap
 		cardY := y + i*theme.Layout.CardStackGap
 		drawCard(screen, card, x, cardY, atlas, theme)
+		// Draw hover overlay on hovered card and all face-up cards below it (the selectable sequence)
+		// Only if the hovered card itself is face-up
+		if showHover && i >= hoveredCardIdx && card.FaceUp {
+			vector.FillRect(screen, float32(x), float32(cardY), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.HoverOverlay, false)
+		}
 	}
 }
 
@@ -137,7 +169,8 @@ func drawError(screen *ebiten.Image, msg string, theme *Theme) {
 }
 
 // drawSelectionOverlay highlights the selected suffix (from selectedIndex to top) on a pile.
-func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, theme *Theme) {
+// Cards are lifted 8 pixels upward and outlined with a goldenrod border for visual feedback.
+func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, atlas *CardAtlas, theme *Theme) {
 	if pileIdx < 0 || pileIdx >= len(view.Tableau) {
 		return
 	}
@@ -149,19 +182,23 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 	y := theme.Layout.TableauStartY
 
 	for i := selectedIndex; i < len(pile.Cards); i++ {
-		cy := y + i*theme.Layout.CardStackGap
+		cy := y + i*theme.Layout.CardStackGap - theme.Layout.SelectionLiftPx
+		// Redraw the card at the lifted position
+		drawCard(screen, pile.Cards[i], x, cy, atlas, theme)
+		// Gold tint overlay
 		vector.FillRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.SelectionOverlay, false)
+		// Goldenrod border for contrast
+		vector.StrokeRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), float32(theme.Layout.SelectionBorderPx), theme.Colors.SelectionBorder, false)
 	}
 }
 
 func drawEmptyPilePlaceholder(screen *ebiten.Image, x, y int, theme *Theme) {
-	const borderWidth = 2
 	// Faint fill and border for visibility on table felt
 	fill := theme.Colors.PlaceholderBG
 	border := theme.Colors.PlaceholderBorder
 
 	vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), fill, false)
-	vector.StrokeRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), borderWidth, border, false)
+	vector.StrokeRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), float32(theme.Layout.PlaceholderBorderPx), border, false)
 
 }
 
