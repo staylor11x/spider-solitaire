@@ -107,6 +107,17 @@ func (g *Game) handleKeyboard() {
 	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
 		g.showHelp = !g.showHelp
 	}
+
+	// ESC = cancel selection or close help overlay
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		if g.showHelp {
+			g.showHelp = false
+			logger.Debug("Help overlay closed via ESC key")
+		} else if g.selecting {
+			g.clearSelection()
+			logger.Debug("Selection canceled via ESC key")
+		}
+	}
 }
 
 func (g *Game) handleMouse() {
@@ -153,6 +164,8 @@ func (g *Game) handleMouse() {
 			g.view = g.state.View()
 			logger.Info("Move: success %d:%d -> %d (completed=%d)", g.selectedPile, g.selectedIndex, pileIdx, g.view.CompletedCount)
 		}
+	} else {
+		logger.Debug("Selection canceled by clicking empty space")
 	}
 	g.clearSelection()
 }
@@ -188,9 +201,12 @@ func (g *Game) hitTest(mx, my int) (pileIdx, cardIdx int, ok bool) {
 			}
 		}
 		// if clicking below all cards but within column, treat as click on topmost card area
+		// Allow a small margin (one CardStackGap) below the bottom of the top card for easier targeting
 		if len(pile.Cards) > 0 {
 			topY := y + (len(pile.Cards)-1)*g.theme.Layout.CardStackGap
-			if mx >= x && mx < x+g.theme.Layout.CardWidth && my >= topY+g.theme.Layout.CardHeight {
+			bottomY := topY + g.theme.Layout.CardHeight
+			clickMarginBelow := g.theme.Layout.CardStackGap // 30px margin
+			if mx >= x && mx < x+g.theme.Layout.CardWidth && my >= bottomY && my < bottomY+clickMarginBelow {
 				return i, len(pile.Cards) - 1, true
 			}
 		}

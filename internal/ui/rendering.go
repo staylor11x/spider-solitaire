@@ -199,6 +199,7 @@ func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
 		"[U] - Undo Move",
 		"[R] - Reset Game",
 		"[H] - Toggle Help",
+		"[ESC] - Cancel Selection / Close Help",
 		"",
 		"Press [H] to close",
 	}
