@@ -20,6 +20,7 @@ var (
 	ErrNoCardsToMove           = errors.New("no cards to move")
 	ErrInvalidSequence         = errors.New("invalid move: sequence not ordered")
 	ErrDestinationNotAccepting = errors.New("invalid move: destination cannot accept")
+	ErrNoHistory               = errors.New("no moves to undo")
 )
 
 // internal errors

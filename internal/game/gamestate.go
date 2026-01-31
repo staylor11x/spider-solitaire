@@ -16,6 +16,7 @@ const (
 	FirstPileCount   = 4  // number of piles that get 6 cards
 	RunLength        = 13 // King to Ace
 	TotalRunsToWin   = 8
+	maxHistorySize   = 25
 )
 
 // GameState represents the complete state of a spider game
@@ -25,6 +26,7 @@ type GameState struct {
 	Completed [][]CardInPile
 	Won       bool
 	Lost      bool
+	history   []GameState // would be good to explain the context of this recursive style structure.
 }
 
 // DealInitialGame creates a new spider layout using two decks
@@ -70,6 +72,7 @@ func (g *GameState) DealRow() error {
 	if !g.canDealRow() {
 		return ErrInsufficientStock
 	}
+	g.pushHistory()
 
 	for i := range TableauPiles {
 		card := g.Stock[len(g.Stock)-1] // take from the end
@@ -108,6 +111,7 @@ func (g *GameState) MoveSequence(srcIdx, startIdx, dstIdx int) error {
 	if !dst.CanAccept(sequence) {
 		return ErrDestinationNotAccepting
 	}
+	g.pushHistory()
 
 	// perform atomic move
 	err = g.executeMove(src, dst, startIdx, sequence)
@@ -242,8 +246,6 @@ func (g *GameState) checkCompletedRuns() error {
 			if err != nil {
 				return ErrRemoveCardsWithContext(err)
 			}
-
-			// add to completed
 			g.Completed = append(g.Completed, removed)
 
 			// flip top card if needed
@@ -314,4 +316,60 @@ func (g *GameState) checkLossCondition() {
 		return
 	}
 	g.Lost = true
+}
+
+// snapshot creates a deep copy of the current GameState for undo history
+func (g *GameState) snapshot() GameState {
+	snap := GameState{
+		Won:   g.Won,
+		Lost:  g.Lost,
+		Stock: make([]deck.Card, len(g.Stock)),
+	}
+	copy(snap.Stock, g.Stock)
+
+	// Deep copy tableau piles
+	for i := range g.Tableau.Piles {
+		snap.Tableau.Piles[i] = g.Tableau.Piles[i].Clone()
+	}
+
+	// deep copy completed runs (slice of slices)
+	snap.Completed = make([][]CardInPile, len(g.Completed))
+	for i, run := range g.Completed {
+		snap.Completed[i] = make([]CardInPile, len(run))
+		copy(snap.Completed[i], run)
+	}
+
+	// don't copy history itself (would cause exponential memory growth!)
+	return snap
+}
+
+// push history saves the current state before an action
+func (g *GameState) pushHistory() {
+	snap := g.snapshot()
+	g.history = append(g.history, snap)
+
+	// Enforce size limit (FIFO - remove oldest object if needed)
+	if len(g.history) > maxHistorySize {
+		g.history = g.history[1:]
+	}
+}
+
+func (g *GameState) Undo() error {
+	if len(g.history) == 0 {
+		return ErrNoHistory
+	}
+
+	// Pop the last state from history
+	lastIdx := len(g.history) - 1
+	previous := g.history[lastIdx]
+	g.history = g.history[:lastIdx]
+
+	// restore the previous state (but preserve remaining history)
+	g.Tableau = previous.Tableau
+	g.Stock = previous.Stock
+	g.Completed = previous.Completed
+	g.Won = previous.Won
+	g.Lost = previous.Lost
+
+	return nil
 }
