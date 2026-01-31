@@ -26,7 +26,7 @@ type GameState struct {
 	Completed [][]CardInPile
 	Won       bool
 	Lost      bool
-	history   []GameState // would be good to explain the context of this recursive style structure.
+	history   []GameState
 }
 
 // DealInitialGame creates a new spider layout using two decks
