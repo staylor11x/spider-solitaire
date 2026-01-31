@@ -12,14 +12,17 @@ import (
 
 // drawTableau renders all 10 piles from the view snapshot
 func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme, selectedPile, selectedIndex, hoveredPile, hoveredCardIdx int) {
+	// When a selection is active, suppress hover overlays to avoid visual noise
+	selectionActive := selectedPile >= 0 && selectedIndex >= 0
+
 	for i, pile := range view.Tableau {
 		x := theme.Layout.TableauStartX + i*theme.Layout.PileSpacing
 		y := theme.Layout.TableauStartY
 		isSelected := (i == selectedPile) // is this pile the selected one?
 		isHovered := (i == hoveredPile)   // is this pile hovered?
 		hvdCardIdx := -1
-		if isHovered {
-			hvdCardIdx = hoveredCardIdx // pass card index only if pile is hovered
+		if isHovered && !selectionActive {
+			hvdCardIdx = hoveredCardIdx
 		}
 		drawPile(screen, pile, x, y, atlas, theme, isSelected, selectedIndex, hvdCardIdx)
 	}
@@ -38,6 +41,14 @@ func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtla
 		}
 		return
 	}
+
+	// Only show hover if the hovered card itself is face-up
+	// Don't highlight anything when hovering over face-down cards
+	showHover := false
+	if hoveredCardIdx >= 0 && hoveredCardIdx < len(pile.Cards) {
+		showHover = pile.Cards[hoveredCardIdx].FaceUp
+	}
+
 	for i, card := range pile.Cards {
 		// Skip cards that are part of a selection (they'll be drawn lifted by drawSelectionOverlay)
 		if isSelected && i >= selectedIndex {
@@ -46,8 +57,9 @@ func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtla
 		// stack the cards vertically with a small gap
 		cardY := y + i*theme.Layout.CardStackGap
 		drawCard(screen, card, x, cardY, atlas, theme)
-		// Draw hover overlay on hovered card and all cards below it (the selectable sequence)
-		if hoveredCardIdx >= 0 && i >= hoveredCardIdx && card.FaceUp {
+		// Draw hover overlay on hovered card and all face-up cards below it (the selectable sequence)
+		// Only if the hovered card itself is face-up
+		if showHover && i >= hoveredCardIdx && card.FaceUp {
 			vector.FillRect(screen, float32(x), float32(cardY), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.HoverOverlay, false)
 		}
 	}

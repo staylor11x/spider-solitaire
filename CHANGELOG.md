@@ -1,5 +1,38 @@
 # CHANGELOG
 
+### v1.7.5 - Enhanced Card Selection & Error UX
+
+Comprehensive UI/UX improvements focused on visual feedback and interaction clarity:
+
+**Selection Overlay Enhancements:**
+- Selected cards now lift 8 pixels upward to imply they're "picked up"
+- Added dark border around selected cards for improved contrast on all card types
+- Maintained translucent dark overlay for cohesive visual feedback
+
+**Hover Highlighting:**
+- Subtle dark overlay displays when hovering over a card
+- Overlay shows the entire selectable sequence (hovered card + all cards below it)
+- Only visible on face-up cards, providing clear preview of what will be selected
+
+**Error Display Improvements:**
+- Changed from aggressive bright red to muted slate background (80,70,90,180)
+- Softened text color to reduce visual jarring
+- More professional and less disruptive error messaging
+
+**Click Detection & Input Improvements:**
+- Refined hit detection: clicks now limited to 30px below card bottom (one CardStackGap)
+- Prevents accidental pile selection when clicking far below cards
+- Added ESC key support: cancel active selection or close help overlay
+- Click-away-to-cancel: silently cancels selection when clicking empty space (with debug logging)
+
+**Testing:**
+- Manual testing of all hover states (empty piles, single cards, stacked sequences)
+- Verified click detection accuracy at various Y-positions
+- Confirmed ESC key behavior with and without active selections
+- Visual contrast testing on both white face-up and dark blue face-down cards
+
+Quality-of-life improvements making card selection more intuitive and the UI more polished.
+
 ### v.1.7.4 - Improving Card Selection UX
 
 - User can no longer select a column and has to actually click on the pile to select the card.
