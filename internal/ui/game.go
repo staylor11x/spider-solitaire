@@ -240,10 +240,14 @@ func (g *Game) clearSelection() {
 // Draw renders the current frame to the screen
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(g.theme.Colors.Background)
-	drawTableau(screen, g.view, g.atlas, g.theme)
+	selectedPile, selectedIndex := -1, -1
+	if g.selecting {
+		selectedPile, selectedIndex = g.selectedPile, g.selectedIndex
+	}
+	drawTableau(screen, g.view, g.atlas, g.theme, selectedPile, selectedIndex)
 
 	if g.selecting {
-		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, g.theme)
+		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, g.atlas, g.theme)
 	}
 
 	drawStats(screen, g.view, g.theme)

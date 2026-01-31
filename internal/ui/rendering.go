@@ -11,22 +11,28 @@ import (
 )
 
 // drawTableau renders all 10 piles from the view snapshot
-func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme) {
+func drawTableau(screen *ebiten.Image, view game.GameViewDTO, atlas *CardAtlas, theme *Theme, selectedPile, selectedIndex int) {
 	for i, pile := range view.Tableau {
 		x := theme.Layout.TableauStartX + i*theme.Layout.PileSpacing
 		y := theme.Layout.TableauStartY
-		drawPile(screen, pile, x, y, atlas, theme)
+		isSelected := (i == selectedPile) // is this pile the selected one?
+		drawPile(screen, pile, x, y, atlas, theme, isSelected, selectedIndex)
 	}
 }
 
 // drawPile renders a single pile at the given position
-func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas, theme *Theme) {
+// If isSelected is true, cards from selectedIndex onwards are skipped (they'll be drawn lifted in drawSelectionOverlay)
+func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtlas, theme *Theme, isSelected bool, selectedIndex int) {
 	// If the pile is empty, render a faint placeholder to indicate a valid drop target
 	if len(pile.Cards) == 0 {
 		drawEmptyPilePlaceholder(screen, x, y, theme)
 		return
 	}
 	for i, card := range pile.Cards {
+		// Skip cards that are part of a selection (they'll be drawn lifted by drawSelectionOverlay)
+		if isSelected && i >= selectedIndex {
+			continue
+		}
 		// stack the cards vertically with a small gap
 		cardY := y + i*theme.Layout.CardStackGap
 		drawCard(screen, card, x, cardY, atlas, theme)
@@ -138,7 +144,7 @@ func drawError(screen *ebiten.Image, msg string, theme *Theme) {
 
 // drawSelectionOverlay highlights the selected suffix (from selectedIndex to top) on a pile.
 // Cards are lifted 8 pixels upward and outlined with a goldenrod border for visual feedback.
-func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, theme *Theme) {
+func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, atlas *CardAtlas, theme *Theme) {
 	if pileIdx < 0 || pileIdx >= len(view.Tableau) {
 		return
 	}
@@ -148,11 +154,13 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 	}
 	x := theme.Layout.TableauStartX + pileIdx*theme.Layout.PileSpacing
 	y := theme.Layout.TableauStartY
-	const liftOffset = 8 // pixels to lift selected cards upward
+	const liftOffset = 5  // pixels to lift selected cards upward
 	const borderWidth = 2 // pixel width of selection border
 
 	for i := selectedIndex; i < len(pile.Cards); i++ {
 		cy := y + i*theme.Layout.CardStackGap - liftOffset // lift by 8 pixels
+		// Redraw the card at the lifted position
+		drawCard(screen, pile.Cards[i], x, cy, atlas, theme)
 		// Gold tint overlay
 		vector.FillRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.SelectionOverlay, false)
 		// Goldenrod border for contrast
