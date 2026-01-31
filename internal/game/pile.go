@@ -88,3 +88,11 @@ func (p *Pile) FlipTopCardIfFaceDown() error {
 
 	return nil
 }
+
+func (p *Pile) Clone() Pile {
+	clone := Pile{
+		cards: make([]CardInPile, len(p.cards)),
+	}
+	copy(clone.cards, p.cards)
+	return clone
+}

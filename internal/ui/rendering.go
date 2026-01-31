@@ -196,6 +196,7 @@ func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
 		"",
 		"Click - Select/Move Cards",
 		"[D] - Deal Row",
+		"[U] - Undo Move",
 		"[R] - Reset Game",
 		"[H] - Toggle Help",
 		"",
