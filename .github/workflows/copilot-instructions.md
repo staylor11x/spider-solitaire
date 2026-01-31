@@ -64,4 +64,4 @@ Acceptance checklist per change:
 - Tests added/updated for behavior; `go test ./...` passes
 - No UI assumptions inside engine; DTOs for UI
 - Minimal allocations in critical paths; no needless complexity
-- Update docs when behavior changes (README/CHANGELOG if requested)
+- Update docs when behavior changes README/CHANGLOG 

@@ -27,6 +27,7 @@ type Colors struct {
 	CardFaceDown      color.RGBA
 	CardText          color.RGBA
 	SelectionOverlay  color.RGBA
+	SelectionBorder   color.RGBA
 	ErrorPillBG       color.RGBA
 	ErrorPillText     color.RGBA
 	HelpOverlayBG     color.RGBA
@@ -62,8 +63,9 @@ var DefaultTheme = Theme{
 		CardFaceDown:      color.RGBA{R: 0, G: 0, B: 139, A: 255},
 		CardText:          color.RGBA{R: 0, G: 0, B: 0, A: 255},
 		SelectionOverlay:  color.RGBA{R: 255, G: 215, B: 0, A: 100},
-		ErrorPillBG:       color.RGBA{R: 200, G: 0, B: 0, A: 220},
-		ErrorPillText:     color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		SelectionBorder:   color.RGBA{R: 218, G: 165, B: 32, A: 255},
+		ErrorPillBG:       color.RGBA{R: 80, G: 70, B: 90, A: 180},
+		ErrorPillText:     color.RGBA{R: 230, G: 230, B: 240, A: 255},
 		HelpOverlayBG:     color.RGBA{R: 0, G: 0, B: 0, A: 200},
 		HelpOverlayText:   color.RGBA{R: 255, G: 255, B: 255, A: 255},
 		PlaceholderBG:     color.RGBA{R: 0, G: 100, B: 0, A: 255},

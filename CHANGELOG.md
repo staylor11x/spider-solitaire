@@ -1,5 +1,10 @@
 # CHANGELOG
 
+### v.1.7.4 - Improving Card Selection UX
+
+- User can no longer select a column and has to actually click on the pile to select the card.
+- Added ESC key usage to cancel move.
+
 ### v1.7.3 - Move Undo Functionality
 
 Implemented comprehensive undo system for move history tracking and recovery:

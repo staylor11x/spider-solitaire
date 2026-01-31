@@ -137,6 +137,7 @@ func drawError(screen *ebiten.Image, msg string, theme *Theme) {
 }
 
 // drawSelectionOverlay highlights the selected suffix (from selectedIndex to top) on a pile.
+// Cards are lifted 8 pixels upward and outlined with a goldenrod border for visual feedback.
 func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, selectedIndex int, theme *Theme) {
 	if pileIdx < 0 || pileIdx >= len(view.Tableau) {
 		return
@@ -147,10 +148,15 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 	}
 	x := theme.Layout.TableauStartX + pileIdx*theme.Layout.PileSpacing
 	y := theme.Layout.TableauStartY
+	const liftOffset = 8 // pixels to lift selected cards upward
+	const borderWidth = 2 // pixel width of selection border
 
 	for i := selectedIndex; i < len(pile.Cards); i++ {
-		cy := y + i*theme.Layout.CardStackGap
+		cy := y + i*theme.Layout.CardStackGap - liftOffset // lift by 8 pixels
+		// Gold tint overlay
 		vector.FillRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.SelectionOverlay, false)
+		// Goldenrod border for contrast
+		vector.StrokeRect(screen, float32(x), float32(cy), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), borderWidth, theme.Colors.SelectionBorder, false)
 	}
 }
 
