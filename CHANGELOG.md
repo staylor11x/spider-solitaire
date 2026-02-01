@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### v1.7.6 - Admin Documentation
+
+Added `ADMIN.md` with maintainer guidelines for issue management and `create-issue.sh` script for streamlined GitHub issue creation from markdown tickets.
+
 ### v1.7.5 - Enhanced Card Selection & Error UX
 
 Comprehensive UI/UX improvements focused on visual feedback and interaction clarity:
