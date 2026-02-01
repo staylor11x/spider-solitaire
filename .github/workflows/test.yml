@@ -4,9 +4,25 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'tickets/**'
+      - 'create-issue.sh'
+      - '.github/RELEASE_TEMPLATE.md'
+      - 'internal/assets/images/**'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'tickets/**'
+      - 'create-issue.sh'
+      - '.github/RELEASE_TEMPLATE.md'
+      - 'internal/assets/images/**'
 jobs:
   test:
     name: Run Tests
