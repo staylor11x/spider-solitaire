@@ -1,5 +1,20 @@
 # CHANGELOG
 
+### v1.7.7 - CI Optimization for Documentation Changes
+
+Optimized GitHub Actions workflow to skip testing and build verification when PRs only modify documentation:
+
+**Changes:**
+- Added `paths-ignore` filters to test workflow, excluding markdown files, LICENSE, asset images, and ticket files
+- Both `push` and `pull_request` triggers now skip CI for documentation-only changes
+- Updated CONTRIBUTING.md with documentation about CI optimization
+- Reduces unnecessary CI runs and provides faster feedback for documentation contributors
+
+**Impact:**
+- ~3-5 minute time savings per documentation-only PR
+- Reduced CI resource consumption
+- Faster iteration for documentation updates
+
 ### v1.7.6 - Admin Documentation
 
 Added `ADMIN.md` with maintainer guidelines for issue management and `create-issue.sh` script for streamlined GitHub issue creation from markdown tickets.

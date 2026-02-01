@@ -187,6 +187,8 @@ All PRs and commits to `main` automatically run:
 
 Tests must pass before merging.
 
+**Note:** The CI workflow automatically skips when PRs only modify documentation files (`.md` files, `LICENSE`, `.gitignore`, `tickets/`, `create-issue.sh`, image assets). This speeds up the feedback loop for documentation contributors. Code changes will always trigger the full test suite.
+
 ---
 
 ## Code Quality
