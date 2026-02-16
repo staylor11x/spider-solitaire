@@ -72,10 +72,10 @@ func (g *Game) Update() error {
 // updateHover tracks which pile and card (if any) are under the cursor
 func (g *Game) updateHover() {
 	mx, my := g.logicalCursor()
-	
+
 	// Check stock pile hover first
 	g.hoveredStock = g.hitTestStock(mx, my)
-	
+
 	pileIdx, cardIdx, ok := g.hitTest(mx, my)
 	if ok {
 		g.hoveredPile = pileIdx
