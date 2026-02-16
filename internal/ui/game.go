@@ -27,8 +27,9 @@ type Game struct {
 	showHelp      bool
 
 	// Hover state for visual feedback
-	hoveredPile    int // -1 when no pile is hovered
-	hoveredCardIdx int // index of hovered card within pile, -1 when none
+	hoveredPile    int  // -1 when no pile is hovered
+	hoveredCardIdx int  // index of hovered card within pile, -1 when none
+	hoveredStock   bool // true when cursor is over stock pile
 }
 
 // NewGame create a new Ebiten game instance
@@ -55,6 +56,7 @@ func NewGame(suitCount deck.SuitCount) *Game {
 		showHelp:       false,
 		hoveredPile:    -1,
 		hoveredCardIdx: -1,
+		hoveredStock:   false,
 	}
 }
 
@@ -70,6 +72,10 @@ func (g *Game) Update() error {
 // updateHover tracks which pile and card (if any) are under the cursor
 func (g *Game) updateHover() {
 	mx, my := g.logicalCursor()
+	
+	// Check stock pile hover first
+	g.hoveredStock = g.hitTestStock(mx, my)
+	
 	pileIdx, cardIdx, ok := g.hitTest(mx, my)
 	if ok {
 		g.hoveredPile = pileIdx
@@ -145,6 +151,21 @@ func (g *Game) handleMouse() {
 		return
 	}
 	mx, my := g.logicalCursor()
+
+	// Check stock pile click first (when no selection active)
+	if !g.selecting && g.hitTestStock(mx, my) {
+		logger.Debug("DealRow: requested via stock click")
+		if err := g.state.DealRow(); err != nil {
+			g.setError(err.Error())
+			logger.Error("DealRow: error: %s", err.Error())
+		} else {
+			g.view = g.state.View()
+			g.clearSelection()
+			logger.Info("DealRow: success (stock=%d, completed=%d)", g.view.StockCount, g.view.CompletedCount)
+		}
+		return
+	}
+
 	pileIdx, cardIdx, ok := g.hitTest(mx, my)
 
 	if !g.selecting {
@@ -234,6 +255,14 @@ func (g *Game) hitTest(mx, my int) (pileIdx, cardIdx int, ok bool) {
 	return 0, 0, false
 }
 
+func (g *Game) hitTestStock(mx, my int) bool {
+	// Stock pile position: bottom-right corner
+	stockX := 1120
+	stockY := 580
+	return mx >= stockX && mx < stockX+g.theme.Layout.CardWidth &&
+		my >= stockY && my < stockY+g.theme.Layout.CardHeight
+}
+
 func (g *Game) tickError() {
 
 	// tickle down the error overlay timer
@@ -265,6 +294,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		selectedPile, selectedIndex = g.selectedPile, g.selectedIndex
 	}
 	drawTableau(screen, g.view, g.atlas, g.theme, selectedPile, selectedIndex, g.hoveredPile, g.hoveredCardIdx)
+
+	// Draw stock pile visual with hover and depletion
+	drawStockPile(screen, g.view.StockCount, g.atlas, g.theme, g.hoveredStock)
 
 	if g.selecting {
 		drawSelectionOverlay(screen, g.view, g.selectedPile, g.selectedIndex, g.atlas, g.theme)

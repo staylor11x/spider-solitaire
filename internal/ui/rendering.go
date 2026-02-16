@@ -257,3 +257,62 @@ func drawHelpOverlay(screen *ebiten.Image, theme *Theme) {
 	}
 
 }
+
+// drawStockPile renders the stock pile visual in the bottom-right corner
+func drawStockPile(screen *ebiten.Image, stockCount int, atlas *CardAtlas, theme *Theme, isHovered bool) {
+	// Position: bottom-right corner with 20px margin
+	stockX := 1120
+	stockY := 580
+
+	// If stock is empty, show placeholder
+	if stockCount == 0 {
+		drawEmptyPilePlaceholder(screen, stockX, stockY, theme)
+		return
+	}
+
+	// Determine number of layers based on stock count for visual depletion
+	var offsets []int
+	if stockCount > 20 {
+		offsets = []int{4, 2, 0} // 3 layers
+	} else if stockCount > 10 {
+		offsets = []int{2, 0} // 2 layers
+	} else {
+		offsets = []int{0} // 1 layer
+	}
+
+	// Draw layered card backs
+	for _, offset := range offsets {
+		x := stockX + offset
+		y := stockY + offset
+
+		back := atlas.Back()
+		if back != nil {
+			w := back.Bounds().Dx()
+			h := back.Bounds().Dy()
+			opts := &ebiten.DrawImageOptions{}
+			// Scale to logical card size
+			sx := float64(theme.Layout.CardWidth) / float64(w)
+			sy := float64(theme.Layout.CardHeight) / float64(h)
+			opts.GeoM.Scale(sx, sy)
+			opts.GeoM.Translate(float64(x), float64(y))
+			screen.DrawImage(back, opts)
+		}
+	}
+
+	// Hover overlay (only when not disabled)
+	if isHovered && stockCount >= 10 {
+		hoverColor := theme.Colors.HoverOverlay
+		vector.FillRect(screen, float32(stockX), float32(stockY),
+			float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight),
+			hoverColor, false)
+	}
+
+	// Disabled overlay when stock < 10 (insufficient for deal)
+	if stockCount < 10 {
+		disabledColor := theme.Colors.Background // Use background color with higher opacity
+		disabledColor.A = 180                    // Semi-transparent
+		vector.FillRect(screen, float32(stockX), float32(stockY),
+			float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight),
+			disabledColor, false)
+	}
+}
