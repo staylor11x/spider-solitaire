@@ -12,6 +12,7 @@ type Layout struct {
 	CardHeight           int
 	PileSpacing          int
 	CardStackGap         int
+	MinCardStackGap      int
 	TableauStartX        int
 	TableauStartY        int
 	StatsX               int
@@ -53,6 +54,7 @@ var DefaultTheme = Theme{
 		CardHeight:           120,
 		PileSpacing:          100,
 		CardStackGap:         30,
+		MinCardStackGap:      10,
 		TableauStartX:        50,
 		TableauStartY:        150,
 		StatsX:               20,
