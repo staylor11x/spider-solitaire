@@ -1,5 +1,18 @@
 # CHANGELOG
 
+### v1.7.8 - Visual Stock Pile with Click-to-Deal
+
+Added interactive stock pile visual in bottom-right corner for mouse-based card dealing.
+
+**Features:**
+- Click stock pile to deal cards (alternative to 'D' key)
+- Visual depletion: card layers decrease as stock depletes
+- Hover feedback and disabled state when insufficient cards
+- Full undo support and error handling
+- Scales correctly with window resizing
+
+Improves accessibility by allowing mouse-only gameplay without keyboard shortcuts.
+
 ### v1.7.7 - CI Optimization for Documentation Changes
 
 Optimized GitHub Actions workflow to skip testing and build verification when PRs only modify documentation:
