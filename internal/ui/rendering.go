@@ -49,13 +49,14 @@ func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtla
 		showHover = pile.Cards[hoveredCardIdx].FaceUp
 	}
 
+	layout := computeTableauPileLayout(theme, len(pile.Cards))
+
 	for i, card := range pile.Cards {
 		// Skip cards that are part of a selection (they'll be drawn lifted by drawSelectionOverlay)
 		if isSelected && i >= selectedIndex {
 			continue
 		}
-		// stack the cards vertically with a small gap
-		cardY := y + i*theme.Layout.CardStackGap
+		cardY := layout.CardY[i]
 		drawCard(screen, card, x, cardY, atlas, theme)
 		// Draw hover overlay on hovered card and all face-up cards below it (the selectable sequence)
 		// Only if the hovered card itself is face-up
@@ -179,10 +180,10 @@ func drawSelectionOverlay(screen *ebiten.Image, view game.GameViewDTO, pileIdx, 
 		return
 	}
 	x := theme.Layout.TableauStartX + pileIdx*theme.Layout.PileSpacing
-	y := theme.Layout.TableauStartY
+	layout := computeTableauPileLayout(theme, len(pile.Cards))
 
 	for i := selectedIndex; i < len(pile.Cards); i++ {
-		cy := y + i*theme.Layout.CardStackGap - theme.Layout.SelectionLiftPx
+		cy := layout.CardY[i] - theme.Layout.SelectionLiftPx
 		// Redraw the card at the lifted position
 		drawCard(screen, pile.Cards[i], x, cy, atlas, theme)
 		// Gold tint overlay

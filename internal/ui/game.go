@@ -234,19 +234,23 @@ func (g *Game) hitTest(mx, my int) (pileIdx, cardIdx int, ok bool) {
 			// no cards and click outside base area: continue searching
 			continue
 		}
+
+		layout := computeTableauPileLayout(g.theme, len(pile.Cards))
+
 		// Cards overlap; check top-most first
 		for j := len(pile.Cards) - 1; j >= 0; j-- {
-			cy := y + j*g.theme.Layout.CardStackGap
+			cy := layout.CardY[j]
 			if mx >= x && mx < x+g.theme.Layout.CardWidth && my >= cy && my < cy+g.theme.Layout.CardHeight {
 				return i, j, true
 			}
 		}
 		// if clicking below all cards but within column, treat as click on topmost card area
-		// Allow a small margin (one CardStackGap) below the bottom of the top card for easier targeting
+		// Allow a small margin below the bottom card for easier targeting.
+		// Tie this to computed gap so hit-testing matches compressed rendering.
 		if len(pile.Cards) > 0 {
-			topY := y + (len(pile.Cards)-1)*g.theme.Layout.CardStackGap
+			topY := layout.CardY[len(pile.Cards)-1]
 			bottomY := topY + g.theme.Layout.CardHeight
-			clickMarginBelow := g.theme.Layout.CardStackGap // 30px margin
+			clickMarginBelow := max(layout.Gap, 8)
 			if mx >= x && mx < x+g.theme.Layout.CardWidth && my >= bottomY && my < bottomY+clickMarginBelow {
 				return i, len(pile.Cards) - 1, true
 			}

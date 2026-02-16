@@ -1,5 +1,16 @@
 # CHANGELOG
 
+### v1.7.9 - Prevent Off-Screen Tableau Cards
+
+Fixed issue #83 where tall tableau piles could render cards below the bottom of the screen.
+
+**Changes:**
+- Added dynamic pile compression so card spacing shrinks when a pile grows too tall
+- Kept rendering, hover, selection overlay, and click hit-testing aligned with the same pile layout logic
+- Added a configurable minimum compressed gap (`MinCardStackGap`) for readability tuning
+
+This keeps piles playable in late-game states without cards disappearing off-screen.
+
 ### v1.7.8 - Visual Stock Pile with Click-to-Deal
 
 Added interactive stock pile visual in bottom-right corner for mouse-based card dealing.
