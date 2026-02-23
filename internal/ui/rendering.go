@@ -35,18 +35,18 @@ func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtla
 	// If the pile is empty, render a faint placeholder to indicate a valid drop target
 	if len(pile.Cards) == 0 {
 		drawEmptyPilePlaceholder(screen, x, y, theme)
-		// Draw hover overlay on empty pile placeholder
-		if hoveredCardIdx >= 0 {
-			vector.FillRect(screen, float32(x), float32(y), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.HoverOverlay, false)
-		}
 		return
 	}
 
 	// Only show hover if the hovered card itself is face-up
 	// Don't highlight anything when hovering over face-down cards
 	showHover := false
+	movableHoverEnd := -1
 	if hoveredCardIdx >= 0 && hoveredCardIdx < len(pile.Cards) {
 		showHover = pile.Cards[hoveredCardIdx].FaceUp
+		if showHover {
+			movableHoverEnd = computeMovableHoverEnd(pile.Cards, hoveredCardIdx)
+		}
 	}
 
 	layout := computeTableauPileLayout(theme, len(pile.Cards))
@@ -58,12 +58,44 @@ func drawPile(screen *ebiten.Image, pile game.PileDTO, x, y int, atlas *CardAtla
 		}
 		cardY := layout.CardY[i]
 		drawCard(screen, card, x, cardY, atlas, theme)
-		// Draw hover overlay on hovered card and all face-up cards below it (the selectable sequence)
-		// Only if the hovered card itself is face-up
-		if showHover && i >= hoveredCardIdx && card.FaceUp {
+		// Draw hover overlay only over the movable sequence from the hovered card.
+		if showHover && movableHoverEnd >= hoveredCardIdx && i >= hoveredCardIdx && i <= movableHoverEnd {
 			vector.FillRect(screen, float32(x), float32(cardY), float32(theme.Layout.CardWidth), float32(theme.Layout.CardHeight), theme.Colors.HoverOverlay, false)
 		}
 	}
+}
+
+// computeMovableHoverEnd returns the top index (len(cards)-1) only when the
+// sequence from startIdx to top is fully movable.
+// A movable sequence is face-up, same suit, descending rank.
+// Returns -1 when startIdx is invalid, not face-up, or blocked before the top.
+func computeMovableHoverEnd(cards []game.CardDTO, startIdx int) int {
+	if startIdx < 0 || startIdx >= len(cards) {
+		return -1
+	}
+
+	if !cards[startIdx].FaceUp {
+		return -1
+	}
+
+	for i := startIdx; i < len(cards)-1; i++ {
+		current := cards[i]
+		next := cards[i+1]
+
+		if !next.FaceUp {
+			return -1
+		}
+
+		if current.Suit != next.Suit {
+			return -1
+		}
+
+		if current.Rank != next.Rank+1 {
+			return -1
+		}
+	}
+
+	return len(cards) - 1
 }
 
 // drawCard renders a single card at the given position
